@@ -46,6 +46,11 @@
       "nsis": {
         "installMode": "currentUser"
       }
-    }
+    },
+    "copyright": "© 2026 MPKoutsoukos. GNU GPL v3.",
+    "license": "GPL-3.0-only",
+    "licenseFile": "../LICENSE",
+    "publisher": "MPKoutsoukos",
+    "homepage": "https://grailnotebook.com"
   }
 }
