@@ -1,0 +1,123 @@
+# Builds the desktop app for the branch's environment on every push:
+#   dev -> grail dev     qa -> grail qa     staging -> grail staging     main -> grail (prod)
+# Pushes usually come from the grail (Android) repo's pipeline, which moves the `grail` submodule to the commit it
+# just built and writes mirror.json, so each desktop build carries the same version and build number as its APK.
+# Windows (installer .exe and .msi) and Linux (.deb and .AppImage) builds are kept as workflow artifacts; main's
+# also go to the Releases page, newest marked Latest, so the prod desktop app is always there to download.
+name: Desktop
+
+on:
+  push:
+    branches: [dev, qa, staging, main]
+  workflow_dispatch:
+
+concurrency:
+  group: desktop-${{ github.ref_name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+env:
+  APP_ENV: ${{ github.ref_name == 'main' && 'prod' || github.ref_name }}
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            bundles: nsis,msi
+          - os: ubuntu-22.04
+            bundles: deb,appimage
+    runs-on: ${{ matrix.os }}
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      build: ${{ steps.meta.outputs.build }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Linux libraries
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Install
+        run: npm ci --no-audit --no-fund
+
+      - name: Check
+        shell: bash
+        run: |
+          npx tsc -p tsconfig.app.json --noEmit
+          npx eslint src
+
+      - name: Version and environment
+        id: meta
+        shell: bash
+        run: |
+          version=$(node -p "require('./mirror.json').version")
+          build=$(node -p "require('./mirror.json').build")
+          case "$APP_ENV" in prod) name=grail; id=com.grailnotebook.desktop ;; *) name="grail $APP_ENV"; id="com.grailnotebook.desktop.$APP_ENV" ;; esac
+          printf '{ "productName": "%s", "identifier": "%s", "version": "%s", "app": { "windows": [{ "title": "%s", "width": 1024, "height": 720, "minWidth": 400, "minHeight": 500, "center": true }] } }\n' \
+            "$name" "$id" "$version" "$name" > src-tauri/tauri.env.json
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "build=$build" >> "$GITHUB_OUTPUT"
+
+      - name: Build
+        shell: bash
+        run: npx tauri build --config src-tauri/tauri.env.json --bundles ${{ matrix.bundles }}
+
+      - name: Collect
+        id: files
+        shell: bash
+        run: |
+          base="grail-${{ steps.meta.outputs.version }}-${{ steps.meta.outputs.build }}"
+          [ "$APP_ENV" = prod ] || base="grail-${APP_ENV}-${{ steps.meta.outputs.version }}-${{ steps.meta.outputs.build }}"
+          mkdir out
+          b=src-tauri/target/release/bundle
+          for f in $b/nsis/*.exe; do [ -e "$f" ] && cp "$f" "out/$base-windows-setup.exe"; done
+          for f in $b/msi/*.msi; do [ -e "$f" ] && cp "$f" "out/$base-windows.msi"; done
+          for f in $b/deb/*.deb; do [ -e "$f" ] && cp "$f" "out/$base-linux-amd64.deb"; done
+          for f in $b/appimage/*.AppImage; do [ -e "$f" ] && cp "$f" "out/$base-linux-x86_64.AppImage"; done
+          ls -la out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ runner.os }}
+          path: out/*
+          retention-days: 30
+
+  release:
+    if: github.ref_name == 'main'
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          merge-multiple: true
+
+      - name: Release (prod)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          tag="v${{ needs.build.outputs.version }}-${{ needs.build.outputs.build }}"
+          gh release create "$tag" out/* --target "$GITHUB_SHA" --latest \
+            --title "grail desktop ${{ needs.build.outputs.version }} (build ${{ needs.build.outputs.build }})" \
+            --notes "grail for Windows and Linux, the same version as the Android app's build ${{ needs.build.outputs.build }}. Windows: run the setup .exe (or the .msi). Linux: the .deb, or the .AppImage (make it executable, then run it)."
