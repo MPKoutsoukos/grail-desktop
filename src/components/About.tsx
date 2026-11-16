@@ -6,6 +6,7 @@ import { LICENCE_TEXTS, NOTICES } from '../licences'
 
 export const CONTACT = 'hello@grailnotebook.com'
 export const PRIVACY_URL = 'https://grailnotebook.com/privacy/'
+export const SOURCE_URL = 'https://github.com/MPKoutsoukos/grail-desktop'
 
 // The same story as the Android app's About page.
 const STORY = {
@@ -69,6 +70,15 @@ export function About({ onClose, onOpenLicences }: { onClose: () => void; onOpen
           <Icon.chevronRight size={18} className="text-paper-dimmer" />
         </Row>
       </Section>
+
+      {/* The GPL asks apps with a screen to show these: copyright, licence, no warranty, where the source is. */}
+      <p className="px-4 pt-2 text-center text-xs leading-relaxed text-paper-dimmer">
+        © 2026 MPKoutsoukos. grail is free software: you can share and change it under the GNU General Public License,
+        version 3. It comes with no warranty. The grail name and look are trademarks.<br />
+        <a href={SOURCE_URL} target="_blank" rel="noreferrer" className="text-accent-light hover:underline">Source code</a>
+        {' · '}
+        <a href="https://www.gnu.org/licenses/gpl-3.0.html" target="_blank" rel="noreferrer" className="text-accent-light hover:underline">GPL v3</a>
+      </p>
     </div>
   )
 }
