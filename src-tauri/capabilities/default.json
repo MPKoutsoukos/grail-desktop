@@ -49,14 +49,6 @@
         }
       ]
     },
-    "core:event:default",
-    {
-      "identifier": "opener:allow-open-url",
-      "allow": [
-        {
-          "url": "https://accounts.google.com/*"
-        }
-      ]
-    }
+    "core:event:default"
   ]
 }
