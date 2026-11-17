@@ -15,8 +15,9 @@ concurrency:
   group: desktop-${{ github.ref_name }}
   cancel-in-progress: true
 
+# Read-only by default; only the release job may write (to create the release).
 permissions:
-  contents: write
+  contents: read
 
 env:
   APP_ENV: ${{ github.ref_name == 'main' && 'prod' || github.ref_name }}
@@ -45,9 +46,10 @@ jobs:
           node-version: 24
           cache: npm
 
-      - uses: dtolnay/rust-toolchain@stable
+      # Third-party actions are pinned to a commit (Dependabot keeps them current).
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
 
-      - uses: swatinem/rust-cache@v2
+      - uses: swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
         with:
           workspaces: src-tauri
 
@@ -106,6 +108,8 @@ jobs:
     if: github.ref_name == 'main'
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -118,6 +122,8 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           tag="v${{ needs.build.outputs.version }}-${{ needs.build.outputs.build }}"
+          # A commit made straight to main (not a mirror of a new APK) keeps the last build number: nothing new to release.
+          if gh release view "$tag" >/dev/null 2>&1; then echo "Release $tag already exists; nothing to publish."; exit 0; fi
           gh release create "$tag" out/* --target "$GITHUB_SHA" --latest \
             --title "grail desktop ${{ needs.build.outputs.version }} (build ${{ needs.build.outputs.build }})" \
             --notes "grail for Windows and Linux, the same version as the Android app's build ${{ needs.build.outputs.build }}. Windows: run the setup .exe (or the .msi). Linux: the .deb, or the .AppImage (make it executable, then run it)."
