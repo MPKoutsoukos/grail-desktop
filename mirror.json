@@ -1,6 +1,6 @@
 {
-  "version": "1.0.0",
-  "build": 20,
+  "version": "1.0.1",
+  "build": 23,
   "env": "dev",
-  "grailCommit": "816ba2f987312956818b64208c4e120af2fbd5da"
+  "grailCommit": "e0b5175203584523ecde0303d5210c2d804033c3"
 }
