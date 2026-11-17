@@ -37,7 +37,7 @@ jobs:
       version: ${{ steps.meta.outputs.version }}
       build: ${{ steps.meta.outputs.build }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           submodules: true
 
