@@ -98,7 +98,7 @@ jobs:
           for f in $b/appimage/*.AppImage; do [ -e "$f" ] && cp "$f" "out/$base-linux-x86_64.AppImage"; done
           ls -la out
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: desktop-${{ runner.os }}
           path: out/*
