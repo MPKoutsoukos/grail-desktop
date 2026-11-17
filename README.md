@@ -6,8 +6,14 @@ This is the desktop twin of the Android app in [grail](https://github.com/MPKout
 APK: the same features, the same notes format, and for every APK built, a desktop build with the same version,
 build number and environment.
 
+Website: **https://grailnotebook.com**
+
 **Download:** the latest version is on the [Releases page](https://github.com/MPKoutsoukos/grail-desktop/releases/latest):
 the Windows installer (`-windows-setup.exe`, or the `.msi`) and Linux packages (`.deb`, `.AppImage`).
+A listing in winget, Windows' package manager (`winget install grail`), is awaiting review.
+
+The Windows installer isn't code-signed yet, so Windows may say "Windows protected your PC" because it doesn't
+know grail yet: click **More info**, then **Run anyway**.
 
 ## What it does
 
@@ -19,7 +25,11 @@ On the desktop, your notes are plain `.md` files in a **home folder you choose**
 that folder inside your Google Drive for desktop folder and Drive keeps a copy online. The phone and the desktop
 keep separate notes; grail doesn't sync between them.
 
-Inspired by [“Creativity isn’t a gift, it’s a system”](https://www.youtube.com/watch?v=_QVYfPnNOg4) by Perry Daniels.
+grail grew out of the "grail method": one notebook for every idea, kept messy, and read back often. It was
+inspired by [a video by Perry Daniels](https://www.youtube.com/watch?v=_QVYfPnNOg4).
+
+**Privacy:** notes stay in your home folder; the app goes online only for the link previews you ask for. Full
+policy: https://grailnotebook.com/privacy/
 
 ## How it mirrors the Android app
 
@@ -55,7 +65,7 @@ Android pipeline makes.
 
 ## Build it yourself
 
-Node 24 and Rust (stable), plus on Linux `libwebkit2gtk-4.1-dev`, `libappindicator3-dev`, `librsvg2-dev` and
+Node 22 or newer and Rust (stable), plus on Linux `libwebkit2gtk-4.1-dev`, `libappindicator3-dev`, `librsvg2-dev` and
 `patchelf`.
 
 ```sh
@@ -97,4 +107,5 @@ under the same licence, with its source available. It comes with no warranty.
 - **The name and look:** "grail", its wordmark and icons are not covered by the GPL; see [TRADEMARKS.md](TRADEMARKS.md).
   Forks are welcome under their own name.
 - **Contributing:** see [CONTRIBUTING.md](CONTRIBUTING.md).
+- **Security:** see [SECURITY.md](SECURITY.md).
 - **Libraries and fonts** keep their own licences (MIT, ISC, SIL OFL); every one is listed in the app.
