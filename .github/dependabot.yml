@@ -1,0 +1,8 @@
+# Keeps the pinned GitHub Actions current (weekly). Security fixes for npm and Cargo dependencies come from
+# Dependabot security updates, switched on in the repository settings.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
