@@ -1,6 +1,6 @@
 import type { Cover } from '../types'
 
-// The title page: tap anywhere to enter. Doubles as the splash while the vault opens.
+// The title page: tap anywhere to enter. Doubles as the splash while the home opens.
 export function CoverScreen({ cover, ready, onEnter }: { cover: Cover; ready: boolean; onEnter: () => void }) {
   return (
     <button
