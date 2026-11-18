@@ -148,18 +148,52 @@ const TOUR = [
   { title: 'Plain files, yours', line: 'Every note is a markdown file in a folder you choose. Next: which one.', Art: FilesArt },
 ]
 
-export function Tour({ onDone, closeLabel = 'Skip', doneLabel = 'Choose a folder' }: { onDone: () => void; closeLabel?: string; doneLabel?: string }) {
-  const [step, setStep] = useState(0)
+/** The very first screen: what grail is, then the tour or straight on to the folder. */
+function WelcomePanel({ onTour, onSkip }: { onTour: () => void; onSkip: () => void }) {
+  const ideas = ['One place for every idea', 'Catch it the moment it arrives', 'Read it back as one story']
+  const k = useReveal(ideas.length + 2, 220, 150)
+  return (
+    <div className="grid min-h-[100dvh] place-items-center bg-ink px-6 py-8 text-paper">
+      <div className="w-full max-w-md">
+        <div className={appear(k >= 1)}><Wordmark size={64} className="text-accent-light" /></div>
+        <h1 className={`mt-5 font-serif text-5xl leading-tight ${appear(k >= 1)}`}>Welcome to your grail diary.</h1>
+        <p className={`mt-3 text-[16px] leading-relaxed text-paper-dim ${appear(k >= 2)}`}>
+          A notebook for catching every idea, and reading them back until the good ones add up.
+        </p>
+        <div className="mt-8 space-y-3">
+          {ideas.map((t, i) => (
+            <div key={t} className={`flex items-center gap-3 ${appear(k >= i + 3)}`}>
+              <span className="grid h-7 w-7 place-items-center rounded-lg bg-accent/20 font-mono text-xs text-accent-light">{i + 1}</span>
+              <span className="text-[15px] font-medium text-paper">{t}</span>
+            </div>
+          ))}
+        </div>
+        <div className={`mt-10 space-y-2 ${appear(k >= ideas.length + 2)}`}>
+          <button onClick={onTour} className="btn-primary w-full" autoFocus>Show me around</button>
+          <button onClick={onSkip} className="btn-quiet w-full">Skip the tour</button>
+          <p className="pt-2 text-center text-xs text-paper-dimmer">Free and open source. No account, no ads, no tracking.</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** welcome: start on the welcome panel (first start); otherwise straight into the tour (Settings). */
+export function Tour({ onDone, welcome, closeLabel = 'Skip', doneLabel = 'Choose a folder' }: { onDone: () => void; welcome?: boolean; closeLabel?: string; doneLabel?: string }) {
+  const [step, setStep] = useState(welcome ? -1 : 0)
   const last = TOUR.length - 1
-  const t = TOUR[step]
+  const first = welcome ? -1 : 0
+  const t = TOUR[Math.max(step, 0)]
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (step < 0) return // the welcome panel has its own buttons (Enter presses the focused one)
       if (e.key === 'ArrowRight' || e.key === 'Enter') { e.preventDefault(); if (step === last) onDone(); else setStep(step + 1) }
-      if (e.key === 'ArrowLeft' && step > 0) setStep(step - 1)
+      if (e.key === 'ArrowLeft' && step > first) setStep(step - 1)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [step, last, onDone])
+  }, [step, last, first, onDone])
+  if (step < 0) return <WelcomePanel onTour={() => setStep(0)} onSkip={onDone} />
   return (
     <div className="grid min-h-[100dvh] place-items-center bg-ink px-6 py-8 text-paper">
       <div className="flex w-full max-w-md flex-col">
@@ -176,7 +210,7 @@ export function Tour({ onDone, closeLabel = 'Skip', doneLabel = 'Choose a folder
           {TOUR.map((_, i) => <span key={i} className={`h-1.5 rounded-full transition-all ${i === step ? 'w-5 bg-accent-light' : 'w-1.5 bg-ink-surface2'}`} />)}
         </div>
         <div className="mt-6 flex gap-2">
-          {step > 0 && <button onClick={() => setStep(step - 1)} className="btn-quiet flex-1">Back</button>}
+          {step > first && <button onClick={() => setStep(step - 1)} className="btn-quiet flex-1">Back</button>}
           <button onClick={() => (step === last ? onDone() : setStep(step + 1))} className="btn-primary flex-[2]">
             {step === last ? doneLabel : 'Next'}
           </button>

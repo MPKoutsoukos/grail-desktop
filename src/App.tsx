@@ -98,7 +98,7 @@ function App() {
   }
 
   // ---- gates: home picker, cover, loading ------------------------------------
-  if (folderNeeded()) return tourDone ? <FolderPicker onChosen={(c, o) => void setFolder(c, o)} /> : <Tour onDone={() => setTourDone(true)} />
+  if (folderNeeded()) return tourDone ? <FolderPicker onChosen={(c, o) => void setFolder(c, o)} /> : <Tour welcome onDone={() => setTourDone(true)} />
   if (touring) return <Tour closeLabel="Close" doneLabel="Done" onDone={() => setTouring(false)} />
   if (changingFolder) {
     return <FolderPicker initial={false} current={currentFolder()} noteCount={notes.length}
