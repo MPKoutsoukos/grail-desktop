@@ -154,7 +154,7 @@ function App() {
   if (confirm) {
     const done = () => { clearConfirm(); setConfirm(null) }
     return <FolderChosen folder={currentFolder()} first={confirm === 'first'} notes={notes.length}
-      plain={notes.filter((n) => !n.title).length} onDone={done} onAgain={() => { done(); setChangingFolder(true) }} />
+      plain={notes.filter((n) => n.plain).length} onDone={done} onAgain={() => { done(); setChangingFolder(true) }} />
   }
 
   // ---- derived ---------------------------------------------------------------

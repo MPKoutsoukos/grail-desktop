@@ -328,7 +328,7 @@ export function FolderChosen({ folder, first, notes, plain, onDone, onAgain }: {
             <Icon.read size={20} className="mt-0.5 shrink-0 text-paper-dim" />
             <span className="text-sm leading-relaxed text-paper-dim">
               {notes === 0 ? 'Empty so far: your new notes go here.' : `Found ${notes} ${notes === 1 ? 'note' : 'notes'}.`}
-              {plain > 0 && <span className="mt-1 block text-xs text-paper-dimmer">{plain} of them are plain markdown from elsewhere. They show in Browse and under their #tags; Read gathers grail’s dated notes.</span>}
+              {plain > 0 && <span className="mt-1 block text-xs text-paper-dimmer">{plain === 1 ? "One of them is" : `${plain} of them are`} plain markdown from elsewhere, titled by file name. They show in Browse and under their #tags; Read gathers grail’s dated notes.</span>}
             </span>
           </div>
         </div>

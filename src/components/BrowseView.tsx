@@ -58,6 +58,7 @@ export function BrowseView({ notes, removedIds, search, onSearch, onOpen, echoes
 }) {
   const [salt, setSalt] = useState(0)
   const filtered = useMemo(() => notes.filter((n) => matchesText(n, search)), [notes, search])
+  const shown = useMemo(() => notes.filter((n) => !isDeleted(n)).length, [notes])
   const echo = useMemo(() => (echoes && !search ? pickEcho(notes, salt) : null), [echoes, search, notes, salt])
 
   const groups = useMemo(() => {
@@ -75,7 +76,7 @@ export function BrowseView({ notes, removedIds, search, onSearch, onOpen, echoes
     <div className="page pb-36 view-enter">
       <TopBar
         title={<span className="flex items-center gap-2"><Wordmark size={30} className="text-accent-light" />{ENV !== 'prod' && <span className="rounded-md bg-accent/15 px-1.5 py-0.5 font-mono text-[11px] uppercase tracking-wider text-accent-light">{ENV}</span>}</span>}
-        sub={`${notes.length} ${notes.length === 1 ? 'fragment' : 'fragments'}`}
+        sub={`${shown} ${shown === 1 ? 'fragment' : 'fragments'}`}
       >
         {header}
       </TopBar>
