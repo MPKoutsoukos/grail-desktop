@@ -22,7 +22,7 @@ layouts), Tags with queries and saved views, drawings, pictures, tables, five th
 for them, and Settings → About grail with the story, privacy, contact and licences.
 
 - **First start**: a five-step illustrated tour, then the home folder (below). Settings → Show the tour plays it again.
-- **Writing**: notes save as you type; **Done** (or Esc) saves and closes.
+- **Writing**: notes save as you type; **Save** (Ctrl+S or Ctrl+Enter) saves and closes.
 - **Shaping the read**: right-click a fragment (or press and hold) to edit it, move it up or down, take it out of
   the read, or delete it.
 - **Nothing is lost**: deleting moves a note to `#deleted`, hidden everywhere until a search asks for `#deleted`.

@@ -127,7 +127,7 @@ export function NoteEditor({ note, onSave, onDelete, onClose, onAttach }: {
   }
 
   const close = () => onClose()
-  // Ctrl+Enter or Ctrl+S: Done (it saves as you type; closing saves the last keystrokes).
+  // Ctrl+Enter or Ctrl+S: Save and close (it saves as you type; closing saves the last keystrokes).
   const closeRef = useRef(close)
   useEffect(() => { closeRef.current = close })
   useEffect(() => {
@@ -196,8 +196,8 @@ export function NoteEditor({ note, onSave, onDelete, onClose, onAttach }: {
           {preview ? <Icon.pen /> : <Icon.eye />}
         </button>
         <button onClick={remove} aria-label="Delete" className="icon-btn hover:text-red-400"><Icon.trash /></button>
-        {/* It saves as you type; Done says so out loud and closes (leaving saves the last keystrokes). */}
-        <button onClick={close} title="Save and close (Ctrl+Enter)" className="btn-primary ml-1 h-9 gap-1.5 px-4 text-sm"><Icon.check size={16} /> Done</button>
+        {/* It saves as you type; Save says so out loud and closes (leaving saves the last keystrokes). */}
+        <button onClick={close} title="Save and close (Ctrl+Enter)" className="btn-primary ml-1 h-9 gap-1.5 px-4 text-sm"><Icon.check size={16} /> Save</button>
       </TopBar>
 
       {incoming && (

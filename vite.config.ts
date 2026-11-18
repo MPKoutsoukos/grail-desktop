@@ -23,7 +23,12 @@ export default defineConfig({
   server: { fs: { allow: ['.'] } },
   plugins: [
     react(),
+    // The desktop app ships its files inside the .exe, so it needs no offline cache, and a service worker there
+    // kept serving the previous version after updates. Tauri builds (TAURI_ENV_PLATFORM is set by the Tauri CLI)
+    // get a service worker that removes itself and its caches, which also cleans up installs that had one.
+    // The plain web build (npm run build) stays an installable, offline-capable web app.
     VitePWA({
+      selfDestroying: !!process.env.TAURI_ENV_PLATFORM,
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'icon-256.png', 'icon-512.png'],
       manifest: {
