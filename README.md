@@ -21,9 +21,11 @@ The same as the phone: Browse with search and Echoes, Read (your fragments as on
 layouts), Tags with queries and saved views, drawings, pictures, tables, five themes, link previews when you ask
 for them, and Settings → About grail with the story, privacy, contact and licences.
 
-On the desktop, your notes are plain `.md` files in a **home folder you choose** (Settings → Home folder). Put
-that folder inside your Google Drive for desktop folder and Drive keeps a copy online. The phone and the desktop
-keep separate notes; grail doesn't sync between them.
+On the desktop, your notes are plain `.md` files in a **home folder**. The first start shows a short tour, then
+asks which folder: the default (`Documents\grail`, created if needed) or one you pick, new or one that already
+has notes, and then says which folder is in use. Settings → Home folder always shows its full path and changes
+it (optionally copying your notes across). Put the folder inside OneDrive, Dropbox or Google Drive for desktop
+and that app keeps a copy online. grail itself doesn't sync between devices.
 
 grail grew out of the "grail method": one notebook for every idea, kept messy, and read back often. It was
 inspired by [a video by Perry Daniels](https://www.youtube.com/watch?v=_QVYfPnNOg4).

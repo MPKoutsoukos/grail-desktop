@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
 import type { Note } from '../types'
-import type { Vault } from '@grail/core'
+import type { Home } from '@grail/core'
 import { SIDECARS } from '@grail/core'
 import { useSidecar } from './useSidecar'
 
@@ -34,8 +34,8 @@ function orderedIds(eligible: Note[], rs: ReviewState): string[] {
 
 // Review arrangements keyed by context: '' = the global review, a category name =
 // that category's own review, each with an independent order + removed set.
-export function useReview(vault: Vault | null, epoch: number) {
-  const [map, set] = useSidecar<ReviewMap>(vault, SIDECARS.review, {}, epoch, normalize)
+export function useReview(home: Home | null, epoch: number) {
+  const [map, set] = useSidecar<ReviewMap>(home, SIDECARS.review, {}, epoch, normalize)
 
   const patch = useCallback((key: string, fn: (rs: ReviewState) => ReviewState) => {
     set((prev) => ({ ...prev, [key]: fn(prev[key] ?? EMPTY) }))

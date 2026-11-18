@@ -3,7 +3,7 @@ import remarkGfm from 'remark-gfm'
 import type { Components } from 'react-markdown'
 import { useImage } from '../hooks/useImage'
 
-// `![](1718267361000-media.jpg)` names a file in the vault (snapshots write these); web addresses load as they are.
+// `![](1718267361000-media.jpg)` names a file in the home (snapshots write these); web addresses load as they are.
 function NoteImage({ src, alt }: { src: string; alt: string }) {
   const web = /^(https?:|data:|blob:)/.test(src)
   const local = useImage(web ? undefined : src)

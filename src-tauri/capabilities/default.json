@@ -21,6 +21,7 @@
     "fs:allow-remove",
     "fs:allow-rename",
     "fs:allow-stat",
+    "fs:allow-exists",
     {
       "identifier": "fs:scope",
       "allow": [

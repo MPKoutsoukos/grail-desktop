@@ -2,7 +2,8 @@ import type { Cover, ReadingFont, Settings as S, Theme } from '../types'
 import { PRESETS, exportTheme, importThemeFile } from '../theme/themes'
 import { REVIEW_TEMPLATES, type ReviewTemplate } from '../review/templates'
 import { pickImages } from '../native/pick'
-import { IS_TAURI, effectiveHome, homeLabel } from '../vault/home'
+import { useEffect, useState } from 'react'
+import { IS_TAURI, currentFolder, folderLabel, folderPath } from '../home/folder'
 import { Row, Section, Toggle, TopBar } from '../ui/primitives'
 import { Icon } from '../ui/icons'
 
@@ -29,27 +30,33 @@ function Swatch({ theme, active, onClick }: { theme: Theme; active: boolean; onC
   )
 }
 
-export function Settings({ settings, onUpdate, onClose, onImportNow, onChangeHome, onOpenAbout }: {
+export function Settings({ settings, onUpdate, onClose, onImportNow, onChangeFolder, onOpenTour, onOpenAbout }: {
   settings: S
   onUpdate: <K extends keyof S>(key: K, value: S[K]) => void
   onClose: () => void
   onImportNow: () => void
-  onChangeHome: () => void
+  onChangeFolder: () => void
+  onOpenTour: () => void
   onOpenAbout: () => void
 }) {
   const setCover = (p: Partial<Cover>) => onUpdate('cover', { ...settings.cover, ...p })
   const presets = PRESETS.some((p) => p.id === settings.theme.id) ? PRESETS : [...PRESETS, settings.theme]
+  const [path, setPath] = useState(() => folderLabel(currentFolder()))
+  useEffect(() => { folderPath(currentFolder()).then(setPath).catch(() => {}) }, [])
 
   return (
     <div className="page pb-24 view-enter">
       <TopBar title="Settings" onBack={onClose} />
 
-      <Section title="Vault">
+      <Section title="Your notes">
         {IS_TAURI && (
-          <Row icon={<Icon.folder />} title="Home folder" hint={homeLabel(effectiveHome())} onClick={onChangeHome}>
+          <Row icon={<Icon.folder />} title="Home folder" hint={<span className="break-all font-mono">{path}</span>} onClick={onChangeFolder}>
             <Icon.chevronRight size={18} className="text-paper-dimmer" />
           </Row>
         )}
+        <Row icon={<Icon.sparkle />} title="Show the tour" hint="The four-step introduction from the first start" onClick={onOpenTour}>
+          <Icon.chevronRight size={18} className="text-paper-dimmer" />
+        </Row>
       </Section>
 
       <Section title="Theme">

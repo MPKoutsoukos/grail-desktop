@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useLatest } from './hooks/useLatest'
-import { useVault } from './hooks/useVault'
+import { useHome } from './hooks/useHome'
 import { useReview } from './hooks/useReview'
 import { useSettings } from './hooks/useSettings'
 import { useViews } from './hooks/useViews'
-import { VaultContext } from './hooks/useImage'
+import { HomeContext } from './hooks/useImage'
 import { pickImages, type ScreenshotRef } from './native/pick'
 import { categoryPool, looseTitle, noteKind } from '@grail/core'
 import { applyTheme } from './theme/themes'
-import { homeNeeded } from './vault/home'
+import { clearConfirm, currentFolder, folderNeeded, pendingConfirm } from './home/folder'
 import { BrowseView } from './components/BrowseView'
 import { CategoriesView } from './components/CategoriesView'
 import { NoteEditor } from './components/NoteEditor'
@@ -19,7 +19,7 @@ import { Settings } from './components/Settings'
 import { About, Licences } from './components/About'
 import { PreviewsProvider } from './linkpreview'
 import { CoverScreen } from './components/CoverScreen'
-import { HomePicker } from './components/HomePicker'
+import { FolderChosen, FolderPicker, Tour } from './components/FolderPicker'
 import { DrawingCanvas } from './components/DrawingCanvas'
 import { TabBar, type Tab } from './components/TabBar'
 import { Icon, Wordmark } from './ui/icons'
@@ -28,17 +28,20 @@ import type { Note, NoteType } from './types'
 type Overlay = 'settings' | 'about' | 'licences' | null
 
 function App() {
-  const { vault, notes, loading, error, epoch, saveNote, createNote, deleteNote, setHome } = useVault()
-  const review = useReview(vault, epoch)
-  const { settings, ready: settingsReady, update } = useSettings(vault, epoch)
-  const { views, addView, removeView } = useViews(vault, epoch)
+  const { home, notes, loading, error, epoch, saveNote, createNote, deleteNote, setFolder } = useHome()
+  const review = useReview(home, epoch)
+  const { settings, ready: settingsReady, update } = useSettings(home, epoch)
+  const { views, addView, removeView } = useViews(home, epoch)
 
   const [tab, setTab] = useState<Tab>('browse')
   const [openId, setOpenId] = useState<string | null>(null)
   const [overlay, setOverlay] = useState<Overlay>(null)
   const [chooser, setChooser] = useState(false)
   const [scoped, setScoped] = useState<string | null>(null)
-  const [changingHome, setChangingHome] = useState(false)
+  const [changingFolder, setChangingFolder] = useState(false)
+  const [tourDone, setTourDone] = useState(false) // first run: the tour comes before the folder choice
+  const [touring, setTouring] = useState(false)   // Settings → Show the tour
+  const [confirm, setConfirm] = useState(pendingConfirm) // a folder was just chosen: say which one is in use
   const [entered, setEntered] = useState(() => { try { return sessionStorage.getItem('grail_entered') === '1' } catch { return false } })
   const [search, setSearch] = useState('')
   const [importing, setImporting] = useState<ScreenshotRef[]>([])
@@ -88,15 +91,19 @@ function App() {
   const importSelected = async (selected: ScreenshotRef[]) => {
     for (const sc of selected) {
       const note = await createNote('media')
-      const mediaPath = await vault!.saveImage(`${note.id}-media`, sc.src)
+      const mediaPath = await home!.saveImage(`${note.id}-media`, sc.src)
       await saveNote({ ...note, mediaPath })
     }
     setImporting([])
   }
 
   // ---- gates: home picker, cover, loading ------------------------------------
-  if (homeNeeded()) return <HomePicker onChosen={setHome} />
-  if (changingHome) return <HomePicker initial={false} onChosen={setHome} onCancel={() => setChangingHome(false)} />
+  if (folderNeeded()) return tourDone ? <FolderPicker onChosen={(c, o) => void setFolder(c, o)} /> : <Tour onDone={() => setTourDone(true)} />
+  if (touring) return <Tour closeLabel="Close" doneLabel="Done" onDone={() => setTouring(false)} />
+  if (changingFolder) {
+    return <FolderPicker initial={false} current={currentFolder()} noteCount={notes.length}
+      onChosen={(c, o) => void setFolder(c, o)} onCancel={() => setChangingFolder(false)} />
+  }
 
   const splash = (
     <div className="grid min-h-[100dvh] place-items-center bg-ink">
@@ -108,9 +115,9 @@ function App() {
       <div className="grid min-h-[100dvh] place-items-center bg-ink p-8 text-center">
         <div>
           <Icon.alert size={28} className="mx-auto mb-3 text-red-400" />
-          <p className="mb-1 font-serif text-xl text-paper">Couldn’t open your vault</p>
+          <p className="mb-1 font-serif text-xl text-paper">Couldn’t open your home folder</p>
           <p className="mb-5 text-sm text-paper-dimmer">{error}</p>
-          <button className="btn-quiet" onClick={() => setChangingHome(true)}>Choose another folder</button>
+          <button className="btn-quiet" onClick={() => setChangingFolder(true)}>Choose another folder</button>
         </div>
       </div>
     )
@@ -122,7 +129,12 @@ function App() {
       try { sessionStorage.setItem('grail_entered', '1') } catch { /* private mode */ }
     }} />
   }
-  if (loading || !vault) return splash
+  if (loading || !home) return splash
+  if (confirm) {
+    const done = () => { clearConfirm(); setConfirm(null) }
+    return <FolderChosen folder={currentFolder()} first={confirm === 'first'} notes={notes.length}
+      plain={notes.filter((n) => !n.title).length} onDone={done} onAgain={() => { done(); setChangingFolder(true) }} />
+  }
 
   // ---- derived ---------------------------------------------------------------
   const eligible = notes.filter((n) => noteKind(n) === 'timeline')
@@ -152,13 +164,13 @@ function App() {
     screen = (
       <DrawingCanvas
         note={openNote}
-        loadDrawing={vault.loadImage.bind(vault)}
-        loadScene={vault.readScene.bind(vault)}
+        loadDrawing={home.loadImage.bind(home)}
+        loadScene={home.readScene.bind(home)}
         onPersist={async (n, png, scene) => {
           // The scene is the source of truth; the PNG is a best-effort preview.
-          await vault.writeScene(n.id, scene)
+          await home.writeScene(n.id, scene)
           let drawingPath: string | undefined
-          try { drawingPath = await vault.saveImage(`${n.id}.png`, png) } catch (e) { console.warn('preview save failed', e) }
+          try { drawingPath = await home.saveImage(`${n.id}.png`, png) } catch (e) { console.warn('preview save failed', e) }
           await saveNote({ ...n, ...(drawingPath ? { drawingPath } : {}) })
         }}
         onDelete={deleteNote}
@@ -174,7 +186,7 @@ function App() {
         onDelete={deleteNote}
         onClose={() => setOpenId(null)}
         onAttach={async (n, dataUrl) => {
-          const mediaPath = await vault.saveImage(`${n.id}-media`, dataUrl)
+          const mediaPath = await home.saveImage(`${n.id}-media`, dataUrl)
           await saveNote({ ...n, mediaPath })
         }}
       />
@@ -190,7 +202,8 @@ function App() {
         onUpdate={update}
         onClose={() => setOverlay(null)}
         onImportNow={async () => { const f = await pickImages(); if (f.length) setImporting(f) }}
-        onChangeHome={() => { setOverlay(null); setChangingHome(true) }}
+        onChangeFolder={() => { setOverlay(null); setChangingFolder(true) }}
+        onOpenTour={() => { setOverlay(null); setTouring(true) }}
         onOpenAbout={() => setOverlay('about')}
       />
     )
@@ -234,7 +247,7 @@ function App() {
   }
 
   return (
-    <VaultContext.Provider value={vault}>
+    <HomeContext.Provider value={home}>
     <PreviewsProvider always={settings.linkPreviews} setAlways={(v) => update('linkPreviews', v)}>
       <div className={chrome ? 'md:pl-20' : ''}>{screen}</div>
       {chrome && (
@@ -246,7 +259,7 @@ function App() {
       <CreateChooser open={chooser} onChoose={(t) => void createRef.current(t)} onClose={() => setChooser(false)} />
       {importing.length > 0 && <ImportSheet candidates={importing} onImport={importSelected} onDismiss={() => setImporting([])} />}
     </PreviewsProvider>
-    </VaultContext.Provider>
+    </HomeContext.Provider>
   )
 }
 
