@@ -21,6 +21,13 @@ The same as the phone: Browse with search and Echoes, Read (your fragments as on
 layouts), Tags with queries and saved views, drawings, pictures, tables, five themes, link previews when you ask
 for them, and Settings → About grail with the story, privacy, contact and licences.
 
+- **First start**: a five-step illustrated tour, then the home folder (below). Settings → Show the tour plays it again.
+- **Writing**: notes save as you type; **Done** (or Esc) saves and closes.
+- **Shaping the read**: right-click a fragment (or press and hold) to edit it, move it up or down, take it out of
+  the read, or delete it.
+- **Nothing is lost**: deleting moves a note to `#deleted`, hidden everywhere until a search asks for `#deleted`.
+  Take the tag out of its text to bring it back; delete it again from there to remove the file for good.
+
 On the desktop, your notes are plain `.md` files in a **home folder**. The first start shows a short tour, then
 asks which folder: the default (`Documents\grail`, created if needed) or one you pick, new or one that already
 has notes, and then says which folder is in use. Settings → Home folder always shows its full path and changes
