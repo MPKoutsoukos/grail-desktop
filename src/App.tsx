@@ -16,6 +16,7 @@ import { ReviewView } from './components/ReviewView'
 import { CreateChooser, CreateFab } from './components/CreateChooser'
 import { ImportSheet } from './components/ImportSheet'
 import { Settings } from './components/Settings'
+import { Shortcuts } from './components/Shortcuts'
 import { About, Licences } from './components/About'
 import { PreviewsProvider } from './linkpreview'
 import { CoverScreen } from './components/CoverScreen'
@@ -45,6 +46,8 @@ function App() {
   const [entered, setEntered] = useState(() => { try { return sessionStorage.getItem('grail_entered') === '1' } catch { return false } })
   const [search, setSearch] = useState('')
   const [importing, setImporting] = useState<ScreenshotRef[]>([])
+  const [shortcuts, setShortcuts] = useState(false) // the keyboard shortcuts sheet ("?")
+  const shortcutsOpen = useLatest(shortcuts)
 
   // ---- theme, type -----------------------------------------------------------
   useEffect(() => { applyTheme(settings.theme) }, [settings.theme])
@@ -80,13 +83,31 @@ function App() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const mod = e.ctrlKey || e.metaKey
-      if (e.key === 'Escape' && !e.defaultPrevented) { if (back()) e.preventDefault(); return }
+      const t = e.target as HTMLElement | null
+      const typing = !!t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)
+      if (e.key === 'Escape' && !e.defaultPrevented) {
+        if (shortcutsOpen.current) { setShortcuts(false); e.preventDefault(); return }
+        if (back()) e.preventDefault()
+        return
+      }
       if (mod && e.key.toLowerCase() === 'n') { e.preventDefault(); void createRef.current('text'); return }
-      if (mod && e.key === ',') { e.preventDefault(); setOverlay('settings') }
+      if (mod && e.key === ',') { e.preventDefault(); setOverlay('settings'); return }
+      // Ctrl+1/2/3: the tabs, from wherever you are (an open note closes, saving as it goes).
+      const tabs = { '1': 'browse', '2': 'review', '3': 'categories' } as const
+      if (mod && !e.shiftKey && e.key in tabs) {
+        e.preventDefault(); setOpenId(null); setOverlay(null); setScoped(null); setTab(tabs[e.key as keyof typeof tabs]); return
+      }
+      // Ctrl+F, or / outside a text field: search notes (on Browse).
+      if ((mod && e.key.toLowerCase() === 'f') || (!typing && !mod && e.key === '/')) {
+        e.preventDefault(); setOpenId(null); setOverlay(null); setScoped(null); setTab('browse')
+        setTimeout(() => (document.querySelector('[data-search]') as HTMLInputElement | null)?.focus(), 60)
+        return
+      }
+      if (!typing && !mod && e.key === '?') { e.preventDefault(); setShortcuts(true) }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [back, createRef])
+  }, [back, createRef, shortcutsOpen])
 
   const importSelected = async (selected: ScreenshotRef[]) => {
     for (const sc of selected) {
@@ -204,6 +225,7 @@ function App() {
         onImportNow={async () => { const f = await pickImages(); if (f.length) setImporting(f) }}
         onChangeFolder={() => { setOverlay(null); setChangingFolder(true) }}
         onOpenTour={() => { setOverlay(null); setTouring(true) }}
+        onOpenShortcuts={() => setShortcuts(true)}
         onOpenAbout={() => setOverlay('about')}
       />
     )
@@ -258,6 +280,7 @@ function App() {
           <TabBar tab={tab} onChange={setTab} />
         </>
       )}
+      {shortcuts && <Shortcuts onClose={() => setShortcuts(false)} />}
       <CreateChooser open={chooser} onChoose={(t) => void createRef.current(t)} onClose={() => setChooser(false)} />
       {importing.length > 0 && <ImportSheet candidates={importing} onImport={importSelected} onDismiss={() => setImporting([])} />}
     </PreviewsProvider>

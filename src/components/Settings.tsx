@@ -30,13 +30,14 @@ function Swatch({ theme, active, onClick }: { theme: Theme; active: boolean; onC
   )
 }
 
-export function Settings({ settings, onUpdate, onClose, onImportNow, onChangeFolder, onOpenTour, onOpenAbout }: {
+export function Settings({ settings, onUpdate, onClose, onImportNow, onChangeFolder, onOpenTour, onOpenShortcuts, onOpenAbout }: {
   settings: S
   onUpdate: <K extends keyof S>(key: K, value: S[K]) => void
   onClose: () => void
   onImportNow: () => void
   onChangeFolder: () => void
   onOpenTour: () => void
+  onOpenShortcuts: () => void
   onOpenAbout: () => void
 }) {
   const setCover = (p: Partial<Cover>) => onUpdate('cover', { ...settings.cover, ...p })
@@ -54,7 +55,10 @@ export function Settings({ settings, onUpdate, onClose, onImportNow, onChangeFol
             <Icon.chevronRight size={18} className="text-paper-dimmer" />
           </Row>
         )}
-        <Row icon={<Icon.sparkle />} title="Show the tour" hint="The four-step introduction from the first start" onClick={onOpenTour}>
+        <Row icon={<Icon.sparkle />} title="Show the tour" hint="The illustrated introduction from the first start" onClick={onOpenTour}>
+          <Icon.chevronRight size={18} className="text-paper-dimmer" />
+        </Row>
+        <Row icon={<Icon.type />} title="Keyboard shortcuts" hint="Press ? anywhere to see them" onClick={onOpenShortcuts}>
           <Icon.chevronRight size={18} className="text-paper-dimmer" />
         </Row>
       </Section>

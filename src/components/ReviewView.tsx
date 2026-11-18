@@ -64,27 +64,97 @@ export function ReviewView(props: Props) {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const progress = useReadProgress()
 
-  const press = (id: string) => { timer.current = setTimeout(() => setActive(id), 450) }
+  // The fragment the keyboard is on (J/K); its actions work on it.
+  const [focus, setFocus] = useState<string | null>(null)
+
+  // Press and hold opens the actions on touch screens only: with a mouse it would fight text selection.
+  const press = (e: React.PointerEvent, id: string) => {
+    if (e.pointerType !== 'touch') return
+    timer.current = setTimeout(() => setActive(id), 450)
+  }
   const cancel = () => { if (timer.current) { clearTimeout(timer.current); timer.current = null } }
   const jump = (id: string) => {
     setDrawer(false)
     requestAnimationFrame(() => document.getElementById(`ch-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
   }
+  const askDelete = (id: string) => {
+    if (props.onDelete && confirm('Delete this fragment? It moves to #deleted: hidden everywhere, but search #deleted to find it again.')) props.onDelete(id)
+  }
 
-  const Block = ({ note, card }: { note: Note; card?: boolean }) => (
-    <section
-      id={`ch-${note.id}`}
-      onPointerDown={() => press(note.id)}
-      onPointerUp={cancel}
-      onPointerLeave={cancel}
-      onPointerMove={cancel}
-      onContextMenu={(e) => { e.preventDefault(); setActive(note.id) }}
-      className={`scroll-mt-24 rounded-2xl transition-colors ${active === note.id ? 'bg-accent/10' : ''}
-        ${card ? 'card p-5' : '-mx-3 px-3'}`}
-    >
-      <NoteBody note={note} />
-    </section>
+  // Keyboard: J/K (or ↓/↑ once a fragment is picked) to go through fragments, Enter or E to edit, Alt+↑/↓ to move,
+  // X to take out of the read, Delete to delete, C for contents, Esc to let go.
+  const live = useRef({ compiled, focus, active, drawer, props })
+  useEffect(() => { live.current = { compiled, focus, active, drawer, props } })
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return
+      if (e.ctrlKey || e.metaKey) return
+      const { compiled: list, focus: f, active: a, drawer: d, props: p } = live.current
+      if (a || d || !list.length) return
+      const i = f ? list.findIndex((n) => n.id === f) : -1
+      const go = (j: number) => {
+        const n = list[Math.max(0, Math.min(list.length - 1, j))]
+        setFocus(n.id)
+        document.getElementById(`ch-${n.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+      }
+      const k = e.key.toLowerCase()
+      if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+        if (f) { e.preventDefault(); p.onMove(f, e.key === 'ArrowUp' ? -1 : 1) }
+        return
+      }
+      if (k === 'j' || (f && e.key === 'ArrowDown')) { e.preventDefault(); go(i + 1); return }
+      if (k === 'k' || (f && e.key === 'ArrowUp')) { e.preventDefault(); go(i < 0 ? 0 : i - 1); return }
+      if (k === 'c') { e.preventDefault(); setDrawer(true); return }
+      if (!f) return
+      if (e.key === 'Enter' || k === 'e') { e.preventDefault(); p.onEdit(f) }
+      else if (k === 'x') { e.preventDefault(); p.onRemove(f); setFocus(list[i + 1]?.id ?? list[i - 1]?.id ?? null) }
+      else if (e.key === 'Delete') { e.preventDefault(); askDelete(f) }
+      else if (e.key === 'Escape') { e.preventDefault(); setFocus(null) }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+    // askDelete reads props through live; it's stable enough for a key handler
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const Tool = ({ label, keys, onClick, danger, children }: { label: string; keys: string; onClick: () => void; danger?: boolean; children: React.ReactNode }) => (
+    <button onClick={(e) => { e.stopPropagation(); onClick() }} title={`${label} (${keys})`} aria-label={label}
+      className={`grid h-8 w-8 place-items-center rounded-lg text-paper-dim transition-colors hover:bg-ink-surface2 ${danger ? 'hover:text-red-400' : 'hover:text-paper'}`}>
+      {children}
+    </button>
   )
+
+  const Block = ({ note, card }: { note: Note; card?: boolean }) => {
+    const i = compiled.indexOf(note)
+    const on = focus === note.id || active === note.id
+    return (
+      <section
+        id={`ch-${note.id}`}
+        onPointerDown={(e) => press(e, note.id)}
+        onPointerUp={cancel}
+        onPointerLeave={cancel}
+        onPointerMove={cancel}
+        onContextMenu={(e) => { e.preventDefault(); setFocus(note.id); setActive(note.id) }}
+        onDoubleClick={() => props.onEdit(note.id)}
+        onClick={() => setFocus(note.id)}
+        className={`group relative scroll-mt-24 rounded-2xl border-l-2 transition-colors
+          ${on ? 'border-accent-light' : 'border-transparent'} ${card ? 'card p-5' : '-mx-4 px-4 py-1'}`}
+      >
+        {/* Hover (or the keyboard's pick) shows the fragment's actions. */}
+        <div className={`absolute -top-4 right-2 z-10 flex gap-0.5 rounded-xl border border-ink-surface2 bg-ink-surface p-1 shadow-lift transition-opacity
+          ${on ? 'opacity-100' : 'pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100'}`}>
+          <Tool label="Edit" keys="E or double-click" onClick={() => props.onEdit(note.id)}><Icon.pen size={16} /></Tool>
+          <Tool label="Move up" keys="Alt+↑" onClick={() => props.onMove(note.id, -1)}><Icon.chevronUp size={16} /></Tool>
+          <Tool label="Move down" keys="Alt+↓" onClick={() => props.onMove(note.id, 1)}><Icon.chevronDown size={16} /></Tool>
+          <Tool label="Take out of the read" keys="X" onClick={() => props.onRemove(note.id)}><Icon.close size={16} /></Tool>
+          {props.onDelete && <Tool label="Delete (to #deleted)" keys="Delete" danger onClick={() => askDelete(note.id)}><Icon.trash size={16} /></Tool>}
+          <span className="sr-only">{i + 1} of {compiled.length}</span>
+        </div>
+        <NoteBody note={note} />
+      </section>
+    )
+  }
 
   const body = () => {
     if (template === 'cards') return <div className="space-y-4">{compiled.map((n) => <Block key={n.id} note={n} card />)}</div>
@@ -125,14 +195,20 @@ export function ReviewView(props: Props) {
         </div>
       )
     }
-    // Manuscript: one continuous read with a quiet ornament between fragments.
+    // Manuscript: one continuous read. No marks between fragments, a little air, and a quiet date when the day
+    // changes (in the margin on wide windows), as on the phone.
+    const day = (n: Note) => format(n.created, 'd MMM yyyy')
     return (
-      <div>
+      <div className="space-y-7">
         {compiled.map((n, i) => (
-          <Fragment key={n.id}>
-            {i > 0 && <p aria-hidden className="my-6 select-none text-center text-paper-dimmer/50">⁂</p>}
+          <div key={n.id} className="relative">
+            {(i === 0 || day(n) !== day(compiled[i - 1])) && (
+              <p aria-hidden className="mb-1 select-none text-[11px] tracking-wide text-accent-light/80 xl:absolute xl:-left-32 xl:top-2 xl:mb-0 xl:w-24 xl:text-right">
+                {format(n.created, n.created < Date.now() - 300 * 86_400_000 ? 'd MMM yyyy' : 'd MMM')}
+              </p>
+            )}
             <Block note={n} />
-          </Fragment>
+          </div>
         ))}
       </div>
     )
@@ -221,7 +297,7 @@ export function ReviewView(props: Props) {
         onUp={() => { props.onMove(active!, -1); setActive(null) }}
         onDown={() => { props.onMove(active!, 1); setActive(null) }}
         onRemove={() => { props.onRemove(active!); setActive(null) }}
-        onDelete={props.onDelete ? () => { props.onDelete!(active!); setActive(null) } : undefined}
+        onDelete={props.onDelete ? () => { askDelete(active!); setActive(null) } : undefined}
         onMakeLoose={props.onMakeLoose ? () => { props.onMakeLoose!(active!); setActive(null) } : undefined}
       />
     </div>
