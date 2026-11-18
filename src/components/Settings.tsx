@@ -97,7 +97,7 @@ export function Settings({ settings, onUpdate, onClose, onImportNow, onChangeFol
             })}
           </div>
         </div>
-        <Row icon={<Icon.sparkle />} title="Echoes" hint="Resurface an older fragment at the top of Browse">
+        <Row icon={<Icon.sparkle />} title="Echoes" hint="Bring back an older fragment beside the notes list when no note is open">
           <Toggle on={settings.echoes} onChange={(v) => onUpdate('echoes', v)} label="Echoes" />
         </Row>
         <Row icon={<Icon.eye />} title="Link previews" hint={settings.linkPreviews ? 'Shown for every link: grail fetches the page by itself' : 'Off: click Preview under a link, and grail asks first'}>

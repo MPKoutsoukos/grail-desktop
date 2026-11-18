@@ -100,7 +100,7 @@ function App() {
       if (mod && !e.shiftKey && e.key in tabs) {
         e.preventDefault(); setOpenId(null); setOverlay(null); setScoped(null); setTab(tabs[e.key as keyof typeof tabs]); return
       }
-      // Ctrl+F, or / outside a text field: search notes (on Browse).
+      // Ctrl+F, or / outside a text field: search notes (in Notes).
       if ((mod && e.key.toLowerCase() === 'f') || (!typing && !mod && e.key === '/')) {
         e.preventDefault(); setOpenId(null); setOverlay(null); setScoped(null); setTab('browse')
         setTimeout(() => (document.querySelector('[data-search]') as HTMLInputElement | null)?.focus(), 60)
