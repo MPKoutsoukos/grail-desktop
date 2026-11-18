@@ -186,6 +186,8 @@ export function NoteEditor({ note, onSave, onDelete, onClose, onAttach }: {
           {preview ? <Icon.pen /> : <Icon.eye />}
         </button>
         <button onClick={remove} aria-label="Delete" className="icon-btn hover:text-red-400"><Icon.trash /></button>
+        {/* It saves as you type; Done says so out loud and closes (leaving saves the last keystrokes). */}
+        <button onClick={close} title="Save and close (Esc)" className="btn-primary ml-1 h-9 gap-1.5 px-4 text-sm"><Icon.check size={16} /> Done</button>
       </TopBar>
 
       {incoming && (

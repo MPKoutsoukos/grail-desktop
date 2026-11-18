@@ -17,6 +17,8 @@ interface Props {
   onEdit: (id: string) => void
   onMove: (id: string, dir: -1 | 1) => void
   onRemove: (id: string) => void
+  /** Delete: to #deleted (hidden until a search asks for #deleted). */
+  onDelete?: (id: string) => void
   onMakeLoose?: (id: string) => void
   onRestore: (id: string) => void
   onClearRemoved: () => void
@@ -219,15 +221,16 @@ export function ReviewView(props: Props) {
         onUp={() => { props.onMove(active!, -1); setActive(null) }}
         onDown={() => { props.onMove(active!, 1); setActive(null) }}
         onRemove={() => { props.onRemove(active!); setActive(null) }}
+        onDelete={props.onDelete ? () => { props.onDelete!(active!); setActive(null) } : undefined}
         onMakeLoose={props.onMakeLoose ? () => { props.onMakeLoose!(active!); setActive(null) } : undefined}
       />
     </div>
   )
 }
 
-function ActionSheet({ note, atTop, atBottom, onClose, onEdit, onUp, onDown, onRemove, onMakeLoose }: {
+function ActionSheet({ note, atTop, atBottom, onClose, onEdit, onUp, onDown, onRemove, onDelete, onMakeLoose }: {
   note?: Note; atTop: boolean; atBottom: boolean
-  onClose: () => void; onEdit: () => void; onUp: () => void; onDown: () => void; onRemove: () => void; onMakeLoose?: () => void
+  onClose: () => void; onEdit: () => void; onUp: () => void; onDown: () => void; onRemove: () => void; onDelete?: () => void; onMakeLoose?: () => void
 }) {
   const [removing, setRemoving] = useState(false)
   return (
@@ -247,7 +250,8 @@ function ActionSheet({ note, atTop, atBottom, onClose, onEdit, onUp, onDown, onR
           <SheetItem icon={<Icon.pen />} label="Edit" onClick={onEdit} />
           <SheetItem icon={<Icon.chevronUp />} label="Move up" onClick={onUp} disabled={atTop} />
           <SheetItem icon={<Icon.chevronDown />} label="Move down" onClick={onDown} disabled={atBottom} />
-          <SheetItem icon={<Icon.close />} label="Take out of the read" onClick={onMakeLoose ? () => setRemoving(true) : onRemove} danger />
+          <SheetItem icon={<Icon.close />} label="Take out of the read" onClick={onMakeLoose ? () => setRemoving(true) : onRemove} />
+          {onDelete && <SheetItem icon={<Icon.trash />} label="Delete" hint="Moves to #deleted: search #deleted to find it again" onClick={onDelete} danger />}
         </>
       )}
     </Sheet>

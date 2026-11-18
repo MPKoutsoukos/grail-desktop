@@ -218,6 +218,7 @@ function App() {
         onEdit={setOpenId}
         onMove={ctx.move}
         onRemove={ctx.remove}
+        onDelete={deleteNote}
         onRestore={ctx.restore}
         onClearRemoved={ctx.clearRemoved}
         onExit={() => setScoped(null)}
@@ -235,6 +236,7 @@ function App() {
         onEdit={setOpenId}
         onMove={global.move}
         onRemove={global.remove}
+        onDelete={deleteNote}
         onMakeLoose={makeLoose}
         onRestore={global.restore}
         onClearRemoved={global.clearRemoved}

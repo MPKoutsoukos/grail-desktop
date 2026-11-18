@@ -6,18 +6,152 @@ import { Icon, Wordmark } from '../ui/icons'
 // reloads into that folder, a confirmation of which folder is in use (FolderChosen).
 // Settings opens the tour again and the folder choice on its own.
 
+// ---- the tour: each step shows a small moving picture of the real screen, and one line -----------
+
+const SAMPLE = 'The bus idea: a map of every stop, drawn from memory. #book'
+const stamp = () => {
+  const d = new Date(), p = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`
+}
+
+/** Counts up 0..n, one every `ms` (looping back to 0 if `loop`): the pictures play out step by step. */
+function useReveal(n: number, ms: number, startAfter = 250, loop = false) {
+  const [k, setK] = useState(0)
+  useEffect(() => {
+    let i = 0
+    let t: ReturnType<typeof setInterval> | undefined
+    const s0 = setTimeout(() => {
+      t = setInterval(() => {
+        i = loop && i >= n ? 0 : i + 1
+        setK(i)
+        if (!loop && i >= n && t) clearInterval(t)
+      }, ms)
+    }, startAfter)
+    return () => { clearTimeout(s0); if (t) clearInterval(t) }
+  }, [n, ms, startAfter, loop])
+  return k
+}
+
+const Mock = ({ children }: { children: React.ReactNode }) => (
+  <div className="card relative flex min-h-[250px] flex-col justify-center gap-2.5 overflow-hidden p-5">{children}</div>
+)
+const appear = (on: boolean) => `transition-all duration-500 ${on ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0'}`
+
+function WriteArt() {
+  const n = useReveal(SAMPLE.length, 45, 400)
+  const typed = SAMPLE.slice(0, n)
+  const tag = typed.indexOf('#book')
+  return (
+    <Mock>
+      <div className="flex items-center justify-between">
+        <span className="font-serif text-xl text-paper">{stamp()}</span>
+        <span className="flex items-center gap-1 rounded-lg bg-accent px-2.5 py-1 text-xs font-semibold text-[#fffaf2]"><Icon.check size={13} /> Done</span>
+      </div>
+      <span className="flex w-fit items-center gap-1.5 rounded-full bg-ink px-2.5 py-0.5 text-[11px] text-paper-dimmer"><Icon.read size={11} className="text-accent-light" /> Gathered into Read</span>
+      <p className="min-h-[84px] font-serif text-lg leading-relaxed text-paper">
+        {tag >= 0 ? <>{typed.slice(0, tag)}<span className="text-accent-light">{typed.slice(tag)}</span></> : typed}
+        <span className="animate-pulse text-accent-light">▍</span>
+      </p>
+    </Mock>
+  )
+}
+
+const FRAGMENTS = [
+  { day: '3 Nov', text: 'Saw a fox on the platform at six, unhurried, like it had a ticket.' },
+  { day: '', text: 'The bus idea: a map of every stop, drawn from memory.' },
+  { day: '12 Nov', text: 'Maybe the map is the book. Each stop, one chapter.' },
+]
+function ReadArt() {
+  const k = useReveal(FRAGMENTS.length, 650)
+  return (
+    <Mock>
+      <span className="eyebrow">Read</span>
+      {FRAGMENTS.map((f, i) => (
+        <div key={i} className={`flex gap-3 ${appear(i < k)}`}>
+          <span className="w-12 shrink-0 pt-1 text-[11px] text-accent-light">{f.day}</span>
+          <p className="font-serif text-[16px] leading-relaxed text-paper">{f.text}</p>
+        </div>
+      ))}
+    </Mock>
+  )
+}
+
+const SHAPE = ['Saw a fox on the platform at six.', 'A map of every stop.', 'Each stop, one chapter.']
+function ShapeArt() {
+  // 0: rest · 1: right-click the middle fragment, its menu opens · 2: Move up · 3: moved
+  const k = useReveal(3, 1300, 500, true)
+  const order = k >= 3 ? [1, 0, 2] : [0, 1, 2]
+  return (
+    <Mock>
+      {order.map((i) => (
+        <div key={i} className={`rounded-2xl px-3 py-2.5 font-serif text-[15px] text-paper transition-colors duration-300 ${i === 1 && (k === 1 || k === 2) ? 'bg-accent/15' : 'bg-ink'}`}>{SHAPE[i]}</div>
+      ))}
+      <div className={`absolute right-5 top-16 w-52 rounded-xl border border-ink-surface2 bg-ink-surface p-1.5 text-[13px] shadow-lift transition-all duration-300 ${k === 1 || k === 2 ? 'scale-100 opacity-100' : 'pointer-events-none scale-95 opacity-0'}`}>
+        <div className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-paper-dim"><Icon.pen size={14} /> Edit</div>
+        <div className={`flex items-center gap-2 rounded-lg px-2 py-1.5 ${k === 2 ? 'bg-ink-surface2 text-paper' : 'text-paper-dim'}`}><Icon.chevronUp size={14} /> Move up</div>
+        <div className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-paper-dim"><Icon.chevronDown size={14} /> Move down</div>
+        <div className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-paper-dim"><Icon.close size={14} /> Take out of the read</div>
+        <div className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-red-400"><Icon.trash size={14} /> Delete</div>
+      </div>
+    </Mock>
+  )
+}
+
+const TAGGED = [
+  { text: 'A map of every stop', book: true },
+  { text: 'Call the bike shop', book: false },
+  { text: 'Each stop, one chapter', book: true },
+  { text: 'Tulips before the frost', book: false },
+]
+function TagArt() {
+  const k = useReveal(2, 900, 600)
+  return (
+    <Mock>
+      {TAGGED.map((n) => (
+        <div key={n.text} className={`flex items-center justify-between rounded-xl border-[1.5px] bg-ink px-3 py-2 text-sm text-paper transition-all duration-500
+          ${k >= 1 && n.book ? 'border-accent-light' : 'border-transparent'} ${k >= 1 && !n.book ? 'opacity-40' : ''}`}>
+          {n.text}{n.book && <span className="text-xs text-accent-light">#book</span>}
+        </div>
+      ))}
+      <span className={`mx-auto mt-1 flex items-center gap-1.5 rounded-full bg-accent/20 px-3 py-1 text-[13px] font-medium text-accent-light ${appear(k >= 2)}`}>
+        <Icon.hash size={14} /> book · 2 notes · its own read
+      </span>
+    </Mock>
+  )
+}
+
+const FILES = [
+  { name: '1763460120000.md', icon: Icon.read },
+  { name: '1763461980000.md', icon: Icon.read },
+  { name: '1763461980000-mf2k.png', icon: Icon.image },
+  { name: 'grail-settings.json', icon: Icon.settings },
+]
+function FilesArt() {
+  const k = useReveal(FILES.length, 420)
+  return (
+    <Mock>
+      <span className="mb-1 flex items-center gap-2.5 text-[15px] font-medium text-paper"><Icon.folder size={20} className="text-accent-light" /> Documents\grail</span>
+      {FILES.map((f, i) => (
+        <span key={f.name} className={`flex items-center gap-2.5 pl-3 font-mono text-[12.5px] text-paper-dim ${appear(i < k)}`}>
+          <f.icon size={15} className="text-paper-dimmer" /> {f.name}
+        </span>
+      ))}
+    </Mock>
+  )
+}
+
 const TOUR = [
-  { icon: Icon.pen, title: 'Write it down', text: 'Press + (or Ctrl+N) for a new note: a thought, a drawing, a picture. Every note is dated, so it needs no title and no place. Keep it messy.' },
-  { icon: Icon.read, title: 'Read it back', text: 'Read gathers your dated notes into one continuous text, oldest first, so a month of scraps reads like a draft. Each fragment can be edited, moved or taken out of the read.' },
-  { icon: Icon.hash, title: 'Tag to gather', text: 'Write #ideas, #book or any #word in a note. Tags lists them, and each tag is its own notebook with its own read.' },
-  { icon: Icon.folder, title: 'Plain files, yours', text: 'Every note is a plain markdown file in a folder. Any app can open it, and you can back it up, sync it or move it. Next: which folder.' },
+  { title: 'Write it down', line: 'Press + (or Ctrl+N) and write. Every note is dated, so it needs no title and no place. It saves as you type; Done closes it.', Art: WriteArt },
+  { title: 'Read it back', line: 'Read stitches your dated notes into one text, oldest first.', Art: ReadArt },
+  { title: 'Shape the read', line: 'Right-click a fragment (or press and hold) to edit it, move it, take it out of the read or delete it. Deleted notes wait in #deleted: search it to find them.', Art: ShapeArt },
+  { title: 'Tag to gather', line: 'Write #book in any note. Each tag becomes its own notebook with its own read.', Art: TagArt },
+  { title: 'Plain files, yours', line: 'Every note is a markdown file in a folder you choose. Next: which one.', Art: FilesArt },
 ]
 
 export function Tour({ onDone, closeLabel = 'Skip', doneLabel = 'Choose a folder' }: { onDone: () => void; closeLabel?: string; doneLabel?: string }) {
   const [step, setStep] = useState(0)
   const last = TOUR.length - 1
   const t = TOUR[step]
-  const Glyph = t.icon
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'ArrowRight' || e.key === 'Enter') { e.preventDefault(); if (step === last) onDone(); else setStep(step + 1) }
@@ -27,18 +161,18 @@ export function Tour({ onDone, closeLabel = 'Skip', doneLabel = 'Choose a folder
     return () => window.removeEventListener('keydown', onKey)
   }, [step, last, onDone])
   return (
-    <div className="grid min-h-[100dvh] place-items-center bg-ink px-6 text-paper">
+    <div className="grid min-h-[100dvh] place-items-center bg-ink px-6 py-8 text-paper">
       <div className="flex w-full max-w-md flex-col">
-        <div className="mb-10 flex items-center justify-between">
+        <div className="mb-8 flex items-center justify-between">
           <Wordmark size={30} className="text-accent-light" />
           <button onClick={onDone} className="tap text-sm text-paper-dimmer hover:text-paper">{closeLabel}</button>
         </div>
-        <div key={step} className="view-enter min-h-[260px]">
-          <div className="mb-7 grid h-16 w-16 place-items-center rounded-3xl bg-accent/15"><Glyph size={30} className="text-accent-light" /></div>
-          <h1 className="mb-3 font-serif text-4xl">{t.title}</h1>
-          <p className="text-[16px] leading-relaxed text-paper-dim">{t.text}</p>
+        <div key={step} className="view-enter">
+          <t.Art />
+          <h1 className="mb-2 mt-7 font-serif text-4xl">{t.title}</h1>
+          <p className="min-h-[78px] text-[16px] leading-relaxed text-paper-dim">{t.line}</p>
         </div>
-        <div className="mt-8 flex justify-center gap-1.5">
+        <div className="mt-6 flex justify-center gap-1.5">
           {TOUR.map((_, i) => <span key={i} className={`h-1.5 rounded-full transition-all ${i === step ? 'w-5 bg-accent-light' : 'w-1.5 bg-ink-surface2'}`} />)}
         </div>
         <div className="mt-6 flex gap-2">
