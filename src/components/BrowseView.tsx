@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { differenceInCalendarDays, formatDistanceToNowStrict, isSameDay, isSameMonth } from 'date-fns'
 import type { Note } from '../types'
 import { matchesText } from '@grail/core'
-import { excerpt, noteKind } from '@grail/core'
+import { excerpt, isDeleted, noteKind } from '@grail/core'
 import { NoteList } from './NoteList'
 import { Empty, SearchField, TopBar } from '../ui/primitives'
 import { Icon, Wordmark } from '../ui/icons'
@@ -12,7 +12,7 @@ import { ENV } from '../env'
 // past month/year), otherwise anything older than a week. Stable for the day.
 function pickEcho(notes: Note[], salt: number): Note | null {
   const now = new Date()
-  const old = notes.filter((n) => noteKind(n) === 'timeline' && n.body.trim() && differenceInCalendarDays(now, n.created) >= 7)
+  const old = notes.filter((n) => noteKind(n) === 'timeline' && !isDeleted(n) && n.body.trim() && differenceInCalendarDays(now, n.created) >= 7)
   if (!old.length) return null
   const anniversaries = old.filter((n) => new Date(n.created).getDate() === now.getDate())
   const pool = anniversaries.length ? anniversaries : old
@@ -58,6 +58,7 @@ export function BrowseView({ notes, removedIds, search, onSearch, onOpen, echoes
 }) {
   const [salt, setSalt] = useState(0)
   const filtered = useMemo(() => notes.filter((n) => matchesText(n, search)), [notes, search])
+  const shown = useMemo(() => notes.filter((n) => !isDeleted(n)).length, [notes])
   const echo = useMemo(() => (echoes && !search ? pickEcho(notes, salt) : null), [echoes, search, notes, salt])
 
   const groups = useMemo(() => {
@@ -75,7 +76,7 @@ export function BrowseView({ notes, removedIds, search, onSearch, onOpen, echoes
     <div className="page pb-36 view-enter">
       <TopBar
         title={<span className="flex items-center gap-2"><Wordmark size={30} className="text-accent-light" />{ENV !== 'prod' && <span className="rounded-md bg-accent/15 px-1.5 py-0.5 font-mono text-[11px] uppercase tracking-wider text-accent-light">{ENV}</span>}</span>}
-        sub={`${notes.length} ${notes.length === 1 ? 'fragment' : 'fragments'}`}
+        sub={`${shown} ${shown === 1 ? 'fragment' : 'fragments'}`}
       >
         {header}
       </TopBar>

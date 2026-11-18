@@ -1,24 +1,24 @@
 import { createContext, useContext, useEffect, useState } from 'react'
-import type { Vault } from '@grail/core'
+import type { Home } from '@grail/core'
 
-export const VaultContext = createContext<Vault | null>(null)
-export const useVaultCtx = () => useContext(VaultContext)
+export const HomeContext = createContext<Home | null>(null)
+export const useHomeCtx = () => useContext(HomeContext)
 
-/** Resolve an attachment in the vault into a displayable src; refreshes when sync replaces it. */
+/** Resolve an attachment in the home into a displayable src; refreshes when sync replaces it. */
 export function useImage(name: string | undefined): string | null {
-  const vault = useVaultCtx()
+  const home = useHomeCtx()
   // Remember which file the src belongs to, so a stale image never shows for a new name.
   const [loaded, setLoaded] = useState<{ name: string; src: string } | null>(null)
   const [bump, setBump] = useState(0)
   useEffect(() => {
-    if (!vault || !name) return
-    return vault.onRemote((names) => { if (names.includes(name)) setBump((b) => b + 1) })
-  }, [vault, name])
+    if (!home || !name) return
+    return home.onRemote((names) => { if (names.includes(name)) setBump((b) => b + 1) })
+  }, [home, name])
   useEffect(() => {
-    if (!vault || !name) return
+    if (!home || !name) return
     let cancelled = false
-    vault.loadImage(name).then((src) => { if (!cancelled) setLoaded({ name, src }) }).catch(() => {})
+    home.loadImage(name).then((src) => { if (!cancelled) setLoaded({ name, src }) }).catch(() => {})
     return () => { cancelled = true }
-  }, [vault, name, bump])
+  }, [home, name, bump])
   return loaded && loaded.name === name ? loaded.src : null
 }

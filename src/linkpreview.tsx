@@ -6,7 +6,7 @@
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { fetch as tauriFetch } from '@tauri-apps/plugin-http'
-import { IS_TAURI } from './vault/home'
+import { IS_TAURI } from './home/folder'
 import { Icon } from './ui/icons'
 
 export type Preview = { title: string; description: string; site: string; image: string | null; at: number }

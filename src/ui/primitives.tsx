@@ -143,6 +143,7 @@ export function SearchField({ value, onChange, placeholder = 'Search notes', mon
       <Icon.search size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-paper-dimmer" />
       <input
         type="search"
+        data-search
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
