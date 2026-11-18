@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { Note } from '../types'
 import { askToConfirm, currentFolder, saveFolder, type HomeFolder } from '../home/folder'
 import { openStore } from '../home/store'
-import { Home, isHomeFile } from '@grail/core'
+import { Home, isDeleted, isHomeFile, markDeleted } from '@grail/core'
 
 // Opens the active home and keeps the note list in memory. `epoch` bumps when
 // sync changes files underneath us, so sidecar hooks know to re-read.
@@ -71,12 +71,15 @@ export function useHome() {
     return saveNote(home.newNote(type, body))
   }, [home, saveNote])
 
+  /** Delete = move to #deleted: the note stays in its file, hidden until a search asks for #deleted.
+   *  A note already in #deleted is deleted for good (its file and pictures go). */
   const deleteNote = useCallback(async (id: string) => {
     if (!home) return
     const note = notes.find((n) => n.id === id)
+    if (note && !isDeleted(note)) { await saveNote(markDeleted(note)); return }
     if (note) await home.deleteNote(note)
     setNotes((prev) => prev.filter((n) => n.id !== id))
-  }, [home, notes])
+  }, [home, notes, saveNote])
 
   // Switching homes reloads the webview so every store re-reads from the new folder. bringNotes copies
   // the current home's files across first (files the new folder already has are kept).

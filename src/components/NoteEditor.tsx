@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { Note } from '../types'
-import { categoryName, noteKind } from '@grail/core'
+import { categoryName, isDeleted, noteKind } from '@grail/core'
 import { useImage } from '../hooks/useImage'
 import { pickImages } from '../native/pick'
 import { useLatest } from '../hooks/useLatest'
@@ -127,7 +127,12 @@ export function NoteEditor({ note, onSave, onDelete, onClose, onAttach }: {
   }
 
   const close = () => onClose()
-  const remove = () => { if (confirm('Delete this note and its attachments?')) { onDelete(note.id); onClose() } }
+  const remove = () => {
+    const ask = isDeleted(note)
+      ? 'This note is already in #deleted. Delete it for good? Its file and pictures go, and it can’t be brought back.'
+      : 'Delete this note? It moves to #deleted: hidden everywhere, but search #deleted to find it again.'
+    if (confirm(ask)) { onDelete(note.id); onClose() }
+  }
 
   const edit = (fn: (s: number, e: number, sel: string) => { text: string; sel: [number, number] }) => {
     const el = bodyRef.current

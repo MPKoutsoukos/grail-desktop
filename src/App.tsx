@@ -6,7 +6,7 @@ import { useSettings } from './hooks/useSettings'
 import { useViews } from './hooks/useViews'
 import { HomeContext } from './hooks/useImage'
 import { pickImages, type ScreenshotRef } from './native/pick'
-import { categoryPool, looseTitle, noteKind } from '@grail/core'
+import { categoryPool, isDeleted, looseTitle, noteKind } from '@grail/core'
 import { applyTheme } from './theme/themes'
 import { clearConfirm, currentFolder, folderNeeded, pendingConfirm } from './home/folder'
 import { BrowseView } from './components/BrowseView'
@@ -137,8 +137,8 @@ function App() {
   }
 
   // ---- derived ---------------------------------------------------------------
-  const eligible = notes.filter((n) => noteKind(n) === 'timeline')
-  const loose = notes.filter((n) => noteKind(n) === 'loose')
+  const eligible = notes.filter((n) => noteKind(n) === 'timeline' && !isDeleted(n))
+  const loose = notes.filter((n) => noteKind(n) === 'loose' && !isDeleted(n))
   const global = review.view('', eligible)
   const open = (n: Note) => setOpenId(n.id)
 

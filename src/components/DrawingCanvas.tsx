@@ -5,6 +5,7 @@ import type { Note } from '../types'
 import {
   DRAWING_COLORS, DRAWING_PAPER, DRAWING_SIZES, fitScene, newElementId, normalizeElement, parseScene, sceneSize,
   type Scene, type SceneElement as El, type Tool,
+  isDeleted,
 } from '@grail/core'
 import { useLatest } from '../hooks/useLatest'
 import { Eraser, Minus, Pencil, Redo2, RectangleHorizontal, Circle, ImagePlus, Trash2, Undo2, ArrowLeft, BrushCleaning } from 'lucide-react'
@@ -267,7 +268,10 @@ export function DrawingCanvas({ note, loadDrawing, loadScene, onPersist, onDelet
   }, [persistRef])
 
   const remove = () => {
-    if (confirm('Delete this drawing?')) { onDelete(note.id); onClose() }
+    const ask = isDeleted(note)
+      ? 'This drawing is already in #deleted. Delete it for good? It can’t be brought back.'
+      : 'Delete this drawing? It moves to #deleted: hidden everywhere, but search #deleted to find it again.'
+    if (confirm(ask)) { onDelete(note.id); onClose() }
   }
 
   const iconBtn = 'grid h-10 w-10 place-items-center rounded-xl transition-colors'

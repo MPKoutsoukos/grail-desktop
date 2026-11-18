@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { differenceInCalendarDays, formatDistanceToNowStrict, isSameDay, isSameMonth } from 'date-fns'
 import type { Note } from '../types'
 import { matchesText } from '@grail/core'
-import { excerpt, noteKind } from '@grail/core'
+import { excerpt, isDeleted, noteKind } from '@grail/core'
 import { NoteList } from './NoteList'
 import { Empty, SearchField, TopBar } from '../ui/primitives'
 import { Icon, Wordmark } from '../ui/icons'
@@ -12,7 +12,7 @@ import { ENV } from '../env'
 // past month/year), otherwise anything older than a week. Stable for the day.
 function pickEcho(notes: Note[], salt: number): Note | null {
   const now = new Date()
-  const old = notes.filter((n) => noteKind(n) === 'timeline' && n.body.trim() && differenceInCalendarDays(now, n.created) >= 7)
+  const old = notes.filter((n) => noteKind(n) === 'timeline' && !isDeleted(n) && n.body.trim() && differenceInCalendarDays(now, n.created) >= 7)
   if (!old.length) return null
   const anniversaries = old.filter((n) => new Date(n.created).getDate() === now.getDate())
   const pool = anniversaries.length ? anniversaries : old
