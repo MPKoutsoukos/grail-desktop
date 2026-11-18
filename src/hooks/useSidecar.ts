@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { Vault } from '@grail/core'
+import type { Home } from '@grail/core'
 import { useLatest } from './useLatest'
 
-// A JSON file in the vault, as React state. It re-reads when the vault or the
+// A JSON file in the home, as React state. It re-reads when the home or the
 // sync epoch changes, and writes only on real user changes — never echoing a
 // load back to disk, which would wake sync for nothing.
 export function useSidecar<T>(
-  vault: Vault | null,
+  home: Home | null,
   name: string,
   fallback: T,
   epoch: number,
@@ -19,21 +19,21 @@ export function useSidecar<T>(
   const fb = useLatest(fallback)
 
   useEffect(() => {
-    if (!vault) return
+    if (!home) return
     let cancelled = false
-    vault.readJson(name, fb.current).then((raw) => {
+    home.readJson(name, fb.current).then((raw) => {
       if (cancelled) return
       setValue(norm.current(raw))
       setReady(true)
     })
     return () => { cancelled = true }
-  }, [vault, name, epoch, norm, fb])
+  }, [home, name, epoch, norm, fb])
 
   useEffect(() => {
-    if (!vault || !dirty.current) return
+    if (!home || !dirty.current) return
     dirty.current = false
-    vault.writeJson(name, value)
-  }, [vault, name, value])
+    home.writeJson(name, value)
+  }, [home, name, value])
 
   const update = useCallback((fn: (prev: T) => T) => {
     dirty.current = true

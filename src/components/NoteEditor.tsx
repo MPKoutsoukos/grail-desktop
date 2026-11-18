@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { Note } from '../types'
-import { categoryName, noteKind } from '@grail/core'
+import { categoryName, isDeleted, noteKind } from '@grail/core'
 import { useImage } from '../hooks/useImage'
 import { pickImages } from '../native/pick'
 import { useLatest } from '../hooks/useLatest'
@@ -127,7 +127,22 @@ export function NoteEditor({ note, onSave, onDelete, onClose, onAttach }: {
   }
 
   const close = () => onClose()
-  const remove = () => { if (confirm('Delete this note and its attachments?')) { onDelete(note.id); onClose() } }
+  // Ctrl+Enter or Ctrl+S: Done (it saves as you type; closing saves the last keystrokes).
+  const closeRef = useRef(close)
+  useEffect(() => { closeRef.current = close })
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'Enter' || e.key.toLowerCase() === 's')) { e.preventDefault(); closeRef.current() }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+  const remove = () => {
+    const ask = isDeleted(note)
+      ? 'This note is already in #deleted. Delete it for good? Its file and pictures go, and it can’t be brought back.'
+      : 'Delete this note? It moves to #deleted: hidden everywhere, but search #deleted to find it again.'
+    if (confirm(ask)) { onDelete(note.id); onClose() }
+  }
 
   const edit = (fn: (s: number, e: number, sel: string) => { text: string; sel: [number, number] }) => {
     const el = bodyRef.current
@@ -181,6 +196,8 @@ export function NoteEditor({ note, onSave, onDelete, onClose, onAttach }: {
           {preview ? <Icon.pen /> : <Icon.eye />}
         </button>
         <button onClick={remove} aria-label="Delete" className="icon-btn hover:text-red-400"><Icon.trash /></button>
+        {/* It saves as you type; Done says so out loud and closes (leaving saves the last keystrokes). */}
+        <button onClick={close} title="Save and close (Ctrl+Enter)" className="btn-primary ml-1 h-9 gap-1.5 px-4 text-sm"><Icon.check size={16} /> Done</button>
       </TopBar>
 
       {incoming && (
@@ -216,6 +233,12 @@ export function NoteEditor({ note, onSave, onDelete, onClose, onAttach }: {
           ref={bodyRef}
           value={body}
           onChange={(e) => setBody(e.target.value)}
+          onKeyDown={(e) => {
+            if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey) return
+            const k = e.key.toLowerCase()
+            const tool = k === 'b' ? 'Bold' : k === 'i' ? 'Italic' : k === 'k' ? 'Link' : null
+            if (tool) { e.preventDefault(); apply(tool) }
+          }}
           placeholder="Begin anywhere…"
           autoFocus={!note.body && note.type === 'text'}
           className="reading min-h-[50vh] w-full resize-none bg-transparent text-[19px] leading-[1.7] text-paper outline-none placeholder:italic placeholder:text-paper-dimmer"

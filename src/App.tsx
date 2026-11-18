@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useLatest } from './hooks/useLatest'
-import { useVault } from './hooks/useVault'
+import { useHome } from './hooks/useHome'
 import { useReview } from './hooks/useReview'
 import { useSettings } from './hooks/useSettings'
 import { useViews } from './hooks/useViews'
-import { VaultContext } from './hooks/useImage'
+import { HomeContext } from './hooks/useImage'
 import { pickImages, type ScreenshotRef } from './native/pick'
-import { categoryPool, looseTitle, noteKind } from '@grail/core'
+import { categoryPool, isDeleted, looseTitle, noteKind } from '@grail/core'
 import { applyTheme } from './theme/themes'
-import { homeNeeded } from './vault/home'
+import { clearConfirm, currentFolder, folderNeeded, pendingConfirm } from './home/folder'
 import { BrowseView } from './components/BrowseView'
 import { CategoriesView } from './components/CategoriesView'
 import { NoteEditor } from './components/NoteEditor'
@@ -16,10 +16,11 @@ import { ReviewView } from './components/ReviewView'
 import { CreateChooser, CreateFab } from './components/CreateChooser'
 import { ImportSheet } from './components/ImportSheet'
 import { Settings } from './components/Settings'
+import { Shortcuts } from './components/Shortcuts'
 import { About, Licences } from './components/About'
 import { PreviewsProvider } from './linkpreview'
 import { CoverScreen } from './components/CoverScreen'
-import { HomePicker } from './components/HomePicker'
+import { FolderChosen, FolderPicker, Tour } from './components/FolderPicker'
 import { DrawingCanvas } from './components/DrawingCanvas'
 import { TabBar, type Tab } from './components/TabBar'
 import { Icon, Wordmark } from './ui/icons'
@@ -28,20 +29,25 @@ import type { Note, NoteType } from './types'
 type Overlay = 'settings' | 'about' | 'licences' | null
 
 function App() {
-  const { vault, notes, loading, error, epoch, saveNote, createNote, deleteNote, setHome } = useVault()
-  const review = useReview(vault, epoch)
-  const { settings, ready: settingsReady, update } = useSettings(vault, epoch)
-  const { views, addView, removeView } = useViews(vault, epoch)
+  const { home, notes, loading, error, epoch, saveNote, createNote, deleteNote, setFolder } = useHome()
+  const review = useReview(home, epoch)
+  const { settings, ready: settingsReady, update } = useSettings(home, epoch)
+  const { views, addView, removeView } = useViews(home, epoch)
 
   const [tab, setTab] = useState<Tab>('browse')
   const [openId, setOpenId] = useState<string | null>(null)
   const [overlay, setOverlay] = useState<Overlay>(null)
   const [chooser, setChooser] = useState(false)
   const [scoped, setScoped] = useState<string | null>(null)
-  const [changingHome, setChangingHome] = useState(false)
+  const [changingFolder, setChangingFolder] = useState(false)
+  const [tourDone, setTourDone] = useState(false) // first run: the tour comes before the folder choice
+  const [touring, setTouring] = useState(false)   // Settings → Show the tour
+  const [confirm, setConfirm] = useState(pendingConfirm) // a folder was just chosen: say which one is in use
   const [entered, setEntered] = useState(() => { try { return sessionStorage.getItem('grail_entered') === '1' } catch { return false } })
   const [search, setSearch] = useState('')
   const [importing, setImporting] = useState<ScreenshotRef[]>([])
+  const [shortcuts, setShortcuts] = useState(false) // the keyboard shortcuts sheet ("?")
+  const shortcutsOpen = useLatest(shortcuts)
 
   // ---- theme, type -----------------------------------------------------------
   useEffect(() => { applyTheme(settings.theme) }, [settings.theme])
@@ -77,26 +83,48 @@ function App() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const mod = e.ctrlKey || e.metaKey
-      if (e.key === 'Escape' && !e.defaultPrevented) { if (back()) e.preventDefault(); return }
+      const t = e.target as HTMLElement | null
+      const typing = !!t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)
+      if (e.key === 'Escape' && !e.defaultPrevented) {
+        if (shortcutsOpen.current) { setShortcuts(false); e.preventDefault(); return }
+        if (back()) e.preventDefault()
+        return
+      }
       if (mod && e.key.toLowerCase() === 'n') { e.preventDefault(); void createRef.current('text'); return }
-      if (mod && e.key === ',') { e.preventDefault(); setOverlay('settings') }
+      if (mod && e.key === ',') { e.preventDefault(); setOverlay('settings'); return }
+      // Ctrl+1/2/3: the tabs, from wherever you are (an open note closes, saving as it goes).
+      const tabs = { '1': 'browse', '2': 'review', '3': 'categories' } as const
+      if (mod && !e.shiftKey && e.key in tabs) {
+        e.preventDefault(); setOpenId(null); setOverlay(null); setScoped(null); setTab(tabs[e.key as keyof typeof tabs]); return
+      }
+      // Ctrl+F, or / outside a text field: search notes (on Browse).
+      if ((mod && e.key.toLowerCase() === 'f') || (!typing && !mod && e.key === '/')) {
+        e.preventDefault(); setOpenId(null); setOverlay(null); setScoped(null); setTab('browse')
+        setTimeout(() => (document.querySelector('[data-search]') as HTMLInputElement | null)?.focus(), 60)
+        return
+      }
+      if (!typing && !mod && e.key === '?') { e.preventDefault(); setShortcuts(true) }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [back, createRef])
+  }, [back, createRef, shortcutsOpen])
 
   const importSelected = async (selected: ScreenshotRef[]) => {
     for (const sc of selected) {
       const note = await createNote('media')
-      const mediaPath = await vault!.saveImage(`${note.id}-media`, sc.src)
+      const mediaPath = await home!.saveImage(`${note.id}-media`, sc.src)
       await saveNote({ ...note, mediaPath })
     }
     setImporting([])
   }
 
   // ---- gates: home picker, cover, loading ------------------------------------
-  if (homeNeeded()) return <HomePicker onChosen={setHome} />
-  if (changingHome) return <HomePicker initial={false} onChosen={setHome} onCancel={() => setChangingHome(false)} />
+  if (folderNeeded()) return tourDone ? <FolderPicker onChosen={(c, o) => void setFolder(c, o)} /> : <Tour welcome onDone={() => setTourDone(true)} />
+  if (touring) return <Tour closeLabel="Close" doneLabel="Done" onDone={() => setTouring(false)} />
+  if (changingFolder) {
+    return <FolderPicker initial={false} current={currentFolder()} noteCount={notes.length}
+      onChosen={(c, o) => void setFolder(c, o)} onCancel={() => setChangingFolder(false)} />
+  }
 
   const splash = (
     <div className="grid min-h-[100dvh] place-items-center bg-ink">
@@ -108,9 +136,9 @@ function App() {
       <div className="grid min-h-[100dvh] place-items-center bg-ink p-8 text-center">
         <div>
           <Icon.alert size={28} className="mx-auto mb-3 text-red-400" />
-          <p className="mb-1 font-serif text-xl text-paper">Couldn’t open your vault</p>
+          <p className="mb-1 font-serif text-xl text-paper">Couldn’t open your home folder</p>
           <p className="mb-5 text-sm text-paper-dimmer">{error}</p>
-          <button className="btn-quiet" onClick={() => setChangingHome(true)}>Choose another folder</button>
+          <button className="btn-quiet" onClick={() => setChangingFolder(true)}>Choose another folder</button>
         </div>
       </div>
     )
@@ -122,11 +150,16 @@ function App() {
       try { sessionStorage.setItem('grail_entered', '1') } catch { /* private mode */ }
     }} />
   }
-  if (loading || !vault) return splash
+  if (loading || !home) return splash
+  if (confirm) {
+    const done = () => { clearConfirm(); setConfirm(null) }
+    return <FolderChosen folder={currentFolder()} first={confirm === 'first'} notes={notes.length}
+      plain={notes.filter((n) => n.plain).length} onDone={done} onAgain={() => { done(); setChangingFolder(true) }} />
+  }
 
   // ---- derived ---------------------------------------------------------------
-  const eligible = notes.filter((n) => noteKind(n) === 'timeline')
-  const loose = notes.filter((n) => noteKind(n) === 'loose')
+  const eligible = notes.filter((n) => noteKind(n) === 'timeline' && !isDeleted(n))
+  const loose = notes.filter((n) => noteKind(n) === 'loose' && !isDeleted(n))
   const global = review.view('', eligible)
   const open = (n: Note) => setOpenId(n.id)
 
@@ -152,13 +185,13 @@ function App() {
     screen = (
       <DrawingCanvas
         note={openNote}
-        loadDrawing={vault.loadImage.bind(vault)}
-        loadScene={vault.readScene.bind(vault)}
+        loadDrawing={home.loadImage.bind(home)}
+        loadScene={home.readScene.bind(home)}
         onPersist={async (n, png, scene) => {
           // The scene is the source of truth; the PNG is a best-effort preview.
-          await vault.writeScene(n.id, scene)
+          await home.writeScene(n.id, scene)
           let drawingPath: string | undefined
-          try { drawingPath = await vault.saveImage(`${n.id}.png`, png) } catch (e) { console.warn('preview save failed', e) }
+          try { drawingPath = await home.saveImage(`${n.id}.png`, png) } catch (e) { console.warn('preview save failed', e) }
           await saveNote({ ...n, ...(drawingPath ? { drawingPath } : {}) })
         }}
         onDelete={deleteNote}
@@ -174,7 +207,7 @@ function App() {
         onDelete={deleteNote}
         onClose={() => setOpenId(null)}
         onAttach={async (n, dataUrl) => {
-          const mediaPath = await vault.saveImage(`${n.id}-media`, dataUrl)
+          const mediaPath = await home.saveImage(`${n.id}-media`, dataUrl)
           await saveNote({ ...n, mediaPath })
         }}
       />
@@ -190,7 +223,9 @@ function App() {
         onUpdate={update}
         onClose={() => setOverlay(null)}
         onImportNow={async () => { const f = await pickImages(); if (f.length) setImporting(f) }}
-        onChangeHome={() => { setOverlay(null); setChangingHome(true) }}
+        onChangeFolder={() => { setOverlay(null); setChangingFolder(true) }}
+        onOpenTour={() => { setOverlay(null); setTouring(true) }}
+        onOpenShortcuts={() => setShortcuts(true)}
         onOpenAbout={() => setOverlay('about')}
       />
     )
@@ -205,6 +240,7 @@ function App() {
         onEdit={setOpenId}
         onMove={ctx.move}
         onRemove={ctx.remove}
+        onDelete={deleteNote}
         onRestore={ctx.restore}
         onClearRemoved={ctx.clearRemoved}
         onExit={() => setScoped(null)}
@@ -222,6 +258,7 @@ function App() {
         onEdit={setOpenId}
         onMove={global.move}
         onRemove={global.remove}
+        onDelete={deleteNote}
         onMakeLoose={makeLoose}
         onRestore={global.restore}
         onClearRemoved={global.clearRemoved}
@@ -234,7 +271,7 @@ function App() {
   }
 
   return (
-    <VaultContext.Provider value={vault}>
+    <HomeContext.Provider value={home}>
     <PreviewsProvider always={settings.linkPreviews} setAlways={(v) => update('linkPreviews', v)}>
       <div className={chrome ? 'md:pl-20' : ''}>{screen}</div>
       {chrome && (
@@ -243,10 +280,11 @@ function App() {
           <TabBar tab={tab} onChange={setTab} />
         </>
       )}
+      {shortcuts && <Shortcuts onClose={() => setShortcuts(false)} />}
       <CreateChooser open={chooser} onChoose={(t) => void createRef.current(t)} onClose={() => setChooser(false)} />
       {importing.length > 0 && <ImportSheet candidates={importing} onImport={importSelected} onDismiss={() => setImporting([])} />}
     </PreviewsProvider>
-    </VaultContext.Provider>
+    </HomeContext.Provider>
   )
 }
 

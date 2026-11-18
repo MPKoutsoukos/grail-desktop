@@ -2,7 +2,7 @@
 // the web build. Notes, sync and everything else sit on @grail/core's FileStore.
 
 import { parseFrontmatter, stringifyFrontmatter, dataUrlToBytes, extForMime, writeText, type FileStore } from '@grail/core'
-import type { HomeConfig } from './home'
+import type { HomeFolder } from './folder'
 
 // --------------------------------------------------------------- IndexedDB ---
 
@@ -68,13 +68,14 @@ async function migrateLocalStorage(store: FileStore) {
 
 // ------------------------------------------------------------------- Tauri ---
 
-async function tauriStore(c: HomeConfig): Promise<FileStore> {
+async function tauriStore(c: HomeFolder): Promise<FileStore> {
   const fs = await import('@tauri-apps/plugin-fs')
   const abs = c.kind === 'tauri' && !!c.value
   const opts = abs ? {} : { baseDir: fs.BaseDirectory.AppData }
   const dir = abs ? c.value! : 'grail-home'
   const p = (name: string) => `${dir}/${name}`
-  if (!abs) { try { await fs.mkdir(dir, { ...opts, recursive: true }) } catch { /* exists */ } }
+  // A new home (the default Documents/grail, or a folder typed in) may not exist yet.
+  try { if (!(await fs.exists(dir, opts))) await fs.mkdir(dir, { ...opts, recursive: true }) } catch { /* exists, or the error shows on first read */ }
   // Atomic replace: a crash mid-write never leaves a half-written note.
   const replace = async (name: string, write: (tmp: string) => Promise<void>) => {
     const tmp = p(`.${name}.grail-tmp`)
@@ -97,7 +98,7 @@ async function tauriStore(c: HomeConfig): Promise<FileStore> {
   }
 }
 
-export async function openStore(c: HomeConfig): Promise<FileStore> {
+export async function openStore(c: HomeFolder): Promise<FileStore> {
   if (c.kind === 'browser') {
     const s = idbStore()
     await migrateLocalStorage(s)
