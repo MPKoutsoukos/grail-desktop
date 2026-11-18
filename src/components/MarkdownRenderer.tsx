@@ -40,7 +40,7 @@ const components: Components = {
   pre: ({ children }) => <pre className="my-3">{children}</pre>,
   strong: ({ children }) => <strong className="font-semibold text-paper">{children}</strong>,
   em: ({ children }) => <em className="italic">{children}</em>,
-  hr: () => <p aria-hidden className="my-8 text-center text-paper-dimmer/60">⁂</p>,
+  hr: () => <hr className="mx-auto my-8 w-16 border-0 border-t border-ink-surface2" />,
   img: ({ src, alt }) => <NoteImage src={String(src ?? '')} alt={alt ?? ''} />,
   table: ({ children }) => <div className="my-4 overflow-x-auto"><table className="w-full border-collapse text-[0.9em]">{children}</table></div>,
   th: ({ children }) => <th className="border-b border-ink-surface2 px-3 py-2 text-left font-semibold">{children}</th>,
