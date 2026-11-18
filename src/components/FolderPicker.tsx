@@ -141,7 +141,7 @@ function FilesArt() {
 }
 
 const TOUR = [
-  { title: 'Write it down', line: 'Press + (or Ctrl+N) and write. Every note is dated, so it needs no title and no place. Save keeps it and closes the note (it also saves as you type).', Art: WriteArt },
+  { title: 'Write it down', line: 'Click New note (or press Ctrl+N) and write. Every note is dated, so it needs no title and no place. Save keeps it and closes the note (it also saves as you type).', Art: WriteArt },
   { title: 'Read it back', line: 'Read stitches your dated notes into one text, oldest first.', Art: ReadArt },
   { title: 'Shape the read', line: 'Right-click a fragment (or press and hold) to edit it, move it, take it out of the read or delete it. Deleted notes wait in #deleted: search it to find them.', Art: ShapeArt },
   { title: 'Tag to gather', line: 'Write #book in any note. Each tag becomes its own notebook with its own read.', Art: TagArt },

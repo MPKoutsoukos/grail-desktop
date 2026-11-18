@@ -75,7 +75,7 @@ jobs:
           version=$(node -p "require('./mirror.json').version")
           build=$(node -p "require('./mirror.json').build")
           case "$APP_ENV" in prod) name=grail; id=com.grailnotebook.desktop ;; *) name="grail $APP_ENV"; id="com.grailnotebook.desktop.$APP_ENV" ;; esac
-          printf '{ "productName": "%s", "identifier": "%s", "version": "%s", "app": { "windows": [{ "title": "%s", "width": 1024, "height": 720, "minWidth": 400, "minHeight": 500, "center": true }] } }\n' \
+          printf '{ "productName": "%s", "identifier": "%s", "version": "%s", "app": { "windows": [{ "title": "%s", "width": 1280, "height": 820, "minWidth": 960, "minHeight": 560, "center": true }] } }\n' \
             "$name" "$id" "$version" "$name" > src-tauri/tauri.env.json
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "build=$build" >> "$GITHUB_OUTPUT"

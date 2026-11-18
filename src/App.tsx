@@ -6,14 +6,17 @@ import { useSettings } from './hooks/useSettings'
 import { useViews } from './hooks/useViews'
 import { HomeContext } from './hooks/useImage'
 import { pickImages, type ScreenshotRef } from './native/pick'
-import { categoryPool, isDeleted, looseTitle, noteKind } from '@grail/core'
+import { categoryPool, excerpt, isDeleted, looseTitle, noteKind } from '@grail/core'
+import { format } from 'date-fns'
 import { applyTheme } from './theme/themes'
-import { clearConfirm, currentFolder, folderNeeded, pendingConfirm } from './home/folder'
-import { BrowseView } from './components/BrowseView'
+import { clearConfirm, currentFolder, folderLabel, folderNeeded, pendingConfirm } from './home/folder'
+import { NotesPane } from './components/NotesPane'
+import { pickEcho } from './notes/echo'
+import { Sidebar, type Section as Tab } from './components/Sidebar'
 import { CategoriesView } from './components/CategoriesView'
 import { NoteEditor } from './components/NoteEditor'
 import { ReviewView } from './components/ReviewView'
-import { CreateChooser, CreateFab } from './components/CreateChooser'
+
 import { ImportSheet } from './components/ImportSheet'
 import { Settings } from './components/Settings'
 import { Shortcuts } from './components/Shortcuts'
@@ -22,7 +25,7 @@ import { PreviewsProvider } from './linkpreview'
 import { CoverScreen } from './components/CoverScreen'
 import { FolderChosen, FolderPicker, Tour } from './components/FolderPicker'
 import { DrawingCanvas } from './components/DrawingCanvas'
-import { TabBar, type Tab } from './components/TabBar'
+
 import { Icon, Wordmark } from './ui/icons'
 import type { Note, NoteType } from './types'
 
@@ -169,17 +172,20 @@ function App() {
     global.restore(id)
     await saveNote({ ...note, title: looseTitle(note) })
   }
-
-  const headerActions = (
-    <>
-      <button onClick={() => setOverlay('settings')} aria-label="Settings" className="icon-btn"><Icon.settings /></button>
-    </>
-  )
+  const askDelete = (id: string) => {
+    const n = notes.find((x) => x.id === id)
+    if (!n) return
+    const ask = isDeleted(n)
+      ? 'This note is already in #deleted. Delete it for good? Its file and pictures go, and it can’t be brought back.'
+      : 'Delete this note? It moves to #deleted: hidden everywhere, but search #deleted to find it again.'
+    if (window.confirm(ask)) { if (openId === id) setOpenId(null); void deleteNote(id) }
+  }
 
   // ---- screens ---------------------------------------------------------------
+  // Notes: sidebar | list | the open note. Read, Tags and Settings: sidebar | the page.
   const openNote = notes.find((n) => n.id === openId) ?? null
+  const withList = tab === 'browse' && !overlay && !scoped
   let screen: React.ReactNode
-  let chrome = false
 
   if (openNote?.type === 'drawing') {
     screen = (
@@ -206,6 +212,7 @@ function App() {
         onSave={saveNote}
         onDelete={deleteNote}
         onClose={() => setOpenId(null)}
+        showBack={!withList}
         onAttach={async (n, dataUrl) => {
           const mediaPath = await home.saveImage(`${n.id}-media`, dataUrl)
           await saveNote({ ...n, mediaPath })
@@ -246,15 +253,13 @@ function App() {
         onExit={() => setScoped(null)}
       />
     )
-  } else {
-    chrome = true
-    screen = tab === 'review' ? (
+  } else if (tab === 'review') {
+    screen = (
       <ReviewView
         template={settings.reviewTemplate}
         compiled={global.compiled}
         loose={loose}
         removedNotes={global.removedNotes}
-        header={headerActions}
         onEdit={setOpenId}
         onMove={global.move}
         onRemove={global.remove}
@@ -263,28 +268,67 @@ function App() {
         onRestore={global.restore}
         onClearRemoved={global.clearRemoved}
       />
-    ) : tab === 'categories' ? (
-      <CategoriesView notes={notes} views={views} onOpen={open} onSaveView={addView} onDeleteView={removeView} onReview={setScoped} header={headerActions} />
-    ) : (
-      <BrowseView notes={notes} removedIds={global.removedIds} search={search} onSearch={setSearch} onOpen={open} echoes={settings.echoes} header={headerActions} />
     )
+  } else if (tab === 'categories') {
+    screen = <CategoriesView notes={notes} views={views} onOpen={open} onSaveView={addView} onDeleteView={removeView} onReview={setScoped} header={null} />
+  } else {
+    screen = <NothingOpen notes={notes} echoes={settings.echoes} onOpen={open} onNew={() => void createRef.current('text')} />
   }
 
+  const left = withList ? '34rem' : '14rem' // sidebar 14rem (+ list 20rem)
   return (
     <HomeContext.Provider value={home}>
     <PreviewsProvider always={settings.linkPreviews} setAlways={(v) => update('linkPreviews', v)}>
-      <div className={chrome ? 'md:pl-20' : ''}>{screen}</div>
-      {chrome && (
-        <>
-          {tab === 'browse' && <CreateFab onClick={() => setChooser(true)} />}
-          <TabBar tab={tab} onChange={setTab} />
-        </>
+      <Sidebar
+        section={tab}
+        onSection={(s) => { setOpenId(null); setOverlay(null); setScoped(null); setTab(s) }}
+        notes={notes}
+        views={views}
+        search={withList ? search : ''}
+        onSearch={setSearch}
+        onReadTag={(t) => { setOpenId(null); setOverlay(null); setScoped(t) }}
+        onNew={(t) => { setTab('browse'); setOverlay(null); setScoped(null); void createRef.current(t) }}
+        onSettings={() => { setOpenId(null); setOverlay('settings') }}
+        homeName={folderLabel(currentFolder()).split(/[\\/]/).filter(Boolean).pop() ?? 'Home'}
+        settingsOn={overlay !== null}
+      />
+      {withList && (
+        <div className="fixed inset-y-0 left-56 z-10 w-80 border-r border-ink-surface2/70 bg-ink-surface/30">
+          <NotesPane notes={notes} search={search} onSearch={setSearch} selectedId={openId}
+            onOpen={open} onDelete={askDelete} onNew={() => void createRef.current('text')} />
+        </div>
       )}
+      <main style={{ paddingLeft: left, ['--content-left' as string]: left }} className="min-h-[100dvh]">{screen}</main>
       {shortcuts && <Shortcuts onClose={() => setShortcuts(false)} />}
-      <CreateChooser open={chooser} onChoose={(t) => void createRef.current(t)} onClose={() => setChooser(false)} />
       {importing.length > 0 && <ImportSheet candidates={importing} onImport={importSelected} onDismiss={() => setImporting([])} />}
     </PreviewsProvider>
     </HomeContext.Provider>
+  )
+}
+
+/** The right-hand pane when no note is open: an echo, and how to start. */
+function NothingOpen({ notes, echoes, onOpen, onNew }: { notes: Note[]; echoes: boolean; onOpen: (n: Note) => void; onNew: () => void }) {
+  const [salt, setSalt] = useState(0)
+  const echo = echoes ? pickEcho(notes, salt) : null
+  return (
+    <div className="grid min-h-[100dvh] place-items-center px-10">
+      <div className="w-full max-w-md text-center">
+        {echo ? (
+          <div className="mb-8 text-left">
+            <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold text-accent-light">
+              <Icon.sparkle size={12} /> An echo from {format(echo.created, 'd MMMM yyyy')}
+              <button onClick={() => setSalt((s) => s + 1)} title="Another echo" className="ml-auto rounded p-1 text-paper-dimmer hover:bg-ink-surface hover:text-paper"><Icon.shuffle size={13} /></button>
+            </p>
+            <button onClick={() => onOpen(echo)} className="reading block w-full rounded-lg p-3 text-left text-[18px] italic leading-relaxed text-paper-dim hover:bg-ink-surface">
+              “{excerpt(echo.body, 260)}”
+            </button>
+          </div>
+        ) : null}
+        <p className="text-[13px] text-paper-dimmer">
+          Pick a note on the left, or <button onClick={onNew} className="text-accent-light hover:underline">write a new one</button> (Ctrl+N).
+        </p>
+      </div>
+    </div>
   )
 }
 

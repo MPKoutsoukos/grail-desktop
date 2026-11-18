@@ -17,14 +17,19 @@ know grail yet: click **More info**, then **Run anyway**.
 
 ## What it does
 
-The same as the phone: Browse with search and Echoes, Read (your fragments as one continuous text, in four
-layouts), Tags with queries and saved views, drawings, pictures, tables, five themes, link previews when you ask
-for them, and Settings → About grail with the story, privacy, contact and licences.
+The same notes and features as the phone, laid out as a desktop app: a **sidebar** (New note, Notes, Read, Tags,
+your tags and saved views, Settings), the **list of notes**, and the **open note** beside it, as in Bear or Apple
+Notes. Read and Tags use the whole window next to the sidebar. Drawings, pictures, tables, five themes, link
+previews when you ask for them, and Settings → About grail with the story, privacy, contact and licences.
 
-- **First start**: a five-step illustrated tour, then the home folder (below). Settings → Show the tour plays it again.
+- **First start**: a welcome, a five-step illustrated tour, then the home folder (below). Settings → Show the tour
+  plays it again.
 - **Writing**: notes save as you type; **Save** (Ctrl+S or Ctrl+Enter) saves and closes.
-- **Shaping the read**: right-click a fragment (or press and hold) to edit it, move it up or down, take it out of
-  the read, or delete it.
+- **Native menus**: right-clicking a note, a tag or a fragment in Read opens the system's own context menu.
+- **Shaping the read**: hover a fragment for its actions, or right-click it: edit, move up or down, take it out of
+  the read, or delete it. Double-click edits.
+- **Keyboard**: press **?** for every shortcut (Ctrl+N new note, Ctrl+F search, Ctrl+1/2/3 Notes/Read/Tags, ↑/↓ in
+  the list, J/K and Alt+arrows in Read).
 - **Nothing is lost**: deleting moves a note to `#deleted`, hidden everywhere until a search asks for `#deleted`.
   Take the tag out of its text to bring it back; delete it again from there to remove the file for good.
 

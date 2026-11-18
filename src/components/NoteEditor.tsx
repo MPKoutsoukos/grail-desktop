@@ -43,12 +43,14 @@ function Banner({ text, onMine, onTheirs }: { text: string; onMine: () => void; 
   )
 }
 
-export function NoteEditor({ note, onSave, onDelete, onClose, onAttach }: {
+export function NoteEditor({ note, onSave, onDelete, onClose, onAttach, showBack = true }: {
   note: Note
   onSave: (note: Note) => void
   onDelete: (id: string) => void
   onClose: () => void
   onAttach: (note: Note, dataUrl: string) => Promise<void>
+  /** false beside the notes list, where a back arrow has nowhere to go back to */
+  showBack?: boolean
 }) {
   const [title, setTitle] = useState(note.title)
   const [body, setBody] = useState(note.body)
@@ -187,7 +189,7 @@ export function NoteEditor({ note, onSave, onDelete, onClose, onAttach }: {
 
   return (
     <div className="page pb-32 view-enter">
-      <TopBar onBack={close} title={
+      <TopBar onBack={showBack ? close : undefined} title={
         <span className={`text-xs transition-colors ${flash ? 'text-accent-light' : 'text-paper-dimmer'}`}>
           {flash ? 'Updated from another device' : paused ? 'Waiting for you' : saved ? 'Saved' : 'Saving…'} · {words} {words === 1 ? 'word' : 'words'}
         </span>
@@ -246,8 +248,8 @@ export function NoteEditor({ note, onSave, onDelete, onClose, onAttach }: {
       )}
 
       {!preview && (
-        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-ink-surface2/70 bg-ink/90 backdrop-blur-md"
-          style={{ paddingBottom: 'var(--safe-bottom)' }}>
+        <div className="fixed bottom-0 right-0 z-20 border-t border-ink-surface2/70 bg-ink/90 backdrop-blur-md"
+          style={{ left: 'var(--content-left, 0px)', paddingBottom: 'var(--safe-bottom)' }}>
           <div className="page flex items-center gap-0.5 overflow-x-auto py-1.5">
             {TOOLS.map(({ I, t }) => (
               <button key={t} type="button" title={t} aria-label={t}

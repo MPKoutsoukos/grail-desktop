@@ -13,10 +13,10 @@
     "windows": [
       {
         "title": "grail",
-        "width": 1024,
-        "height": 720,
-        "minWidth": 400,
-        "minHeight": 500,
+        "width": 1280,
+        "height": 820,
+        "minWidth": 960,
+        "minHeight": 560,
         "resizable": true,
         "fullscreen": false,
         "center": true

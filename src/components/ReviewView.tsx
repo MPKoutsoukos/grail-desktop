@@ -6,6 +6,7 @@ import { Markdown } from './Markdown'
 import { Empty, Sheet, SheetItem, TopBar } from '../ui/primitives'
 import { Icon } from '../ui/icons'
 import { excerpt } from '@grail/core'
+import { contextMenu, type MenuEntry } from '../native/menu'
 
 interface Props {
   compiled: Note[]
@@ -118,6 +119,18 @@ export function ReviewView(props: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Right-click: the system's own context menu (the slide-up sheet stays only for the web build).
+  const fragmentMenu = (id: string, i: number): MenuEntry[] => [
+    { label: 'Edit', action: () => props.onEdit(id) },
+    'separator',
+    { label: 'Move up', action: () => props.onMove(id, -1), enabled: i > 0 },
+    { label: 'Move down', action: () => props.onMove(id, 1), enabled: i < compiled.length - 1 },
+    'separator',
+    { label: 'Take out of the read', action: () => props.onRemove(id) },
+    ...(props.onMakeLoose ? [{ label: 'Make it a loose note', action: () => props.onMakeLoose!(id) }] : []),
+    ...(props.onDelete ? ['separator' as const, { label: 'Delete', action: () => askDelete(id) }] : []),
+  ]
+
   const Tool = ({ label, keys, onClick, danger, children }: { label: string; keys: string; onClick: () => void; danger?: boolean; children: React.ReactNode }) => (
     <button onClick={(e) => { e.stopPropagation(); onClick() }} title={`${label} (${keys})`} aria-label={label}
       className={`grid h-8 w-8 place-items-center rounded-lg text-paper-dim transition-colors hover:bg-ink-surface2 ${danger ? 'hover:text-red-400' : 'hover:text-paper'}`}>
@@ -135,7 +148,7 @@ export function ReviewView(props: Props) {
         onPointerUp={cancel}
         onPointerLeave={cancel}
         onPointerMove={cancel}
-        onContextMenu={(e) => { e.preventDefault(); setFocus(note.id); setActive(note.id) }}
+        onContextMenu={(e) => { e.preventDefault(); setFocus(note.id); void contextMenu(fragmentMenu(note.id, i)).then((native) => { if (!native) setActive(note.id) }) }}
         onDoubleClick={() => props.onEdit(note.id)}
         onClick={() => setFocus(note.id)}
         className={`group relative scroll-mt-24 rounded-2xl border-l-2 transition-colors
@@ -199,7 +212,7 @@ export function ReviewView(props: Props) {
     // changes (in the margin on wide windows), as on the phone.
     const day = (n: Note) => format(n.created, 'd MMM yyyy')
     return (
-      <div className="space-y-7">
+      <div className="space-y-4">
         {compiled.map((n, i) => (
           <div key={n.id} className="relative">
             {(i === 0 || day(n) !== day(compiled[i - 1])) && (
@@ -225,8 +238,8 @@ export function ReviewView(props: Props) {
         )}
         {header}
       </TopBar>
-      <div className="fixed inset-x-0 z-10 h-0.5 bg-accent-light/80 transition-[width] md:left-20"
-        style={{ top: 'calc(var(--safe-top) + 3.6rem)', width: `${progress * 100}%` }} />
+      <div className="fixed z-10 h-0.5 bg-accent-light/80 transition-[width]"
+        style={{ top: 'calc(var(--safe-top) + 3.6rem)', left: 'var(--content-left, 0px)', width: `calc((100% - var(--content-left, 0px)) * ${progress})` }} />
 
       {compiled.length === 0 ? (
         <Empty icon={<Icon.read />} title="Nothing to read yet">
@@ -315,7 +328,7 @@ function ActionSheet({ note, atTop, atBottom, onClose, onEdit, onUp, onDown, onR
       {removing ? (
         <>
           <p className="px-4 pb-2 text-sm leading-relaxed text-paper-dim">
-            Make it a loose note to keep it one tap away in Contents — or set it aside; you can bring it back any time.
+            Make it a loose note to keep it one click away in Contents — or set it aside; you can bring it back any time.
           </p>
           <SheetItem icon={<Icon.pen />} label="Make it a loose note" onClick={() => onMakeLoose?.()} />
           <SheetItem icon={<Icon.close />} label="Set aside" onClick={onRemove} danger />

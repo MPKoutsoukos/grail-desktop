@@ -20,7 +20,7 @@ export function ImportSheet({ candidates, onImport, onDismiss }: {
   return (
     <Sheet open onClose={onDismiss} label="Import images">
       <p className="px-2 pb-3 text-sm text-paper">
-        {candidates.length} {candidates.length === 1 ? 'image' : 'images'} · tap to leave one out
+        {candidates.length} {candidates.length === 1 ? 'image' : 'images'} · click one to leave it out
       </p>
       <div className="mb-4 grid max-h-[45vh] grid-cols-3 gap-2 overflow-y-auto px-1 sm:grid-cols-4">
         {candidates.map((c) => {

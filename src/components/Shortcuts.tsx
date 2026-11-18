@@ -7,7 +7,8 @@ const GROUPS: { title: string; keys: [string, string][] }[] = [
     keys: [
       ['Ctrl+N', 'New note'],
       ['Ctrl+F  or  /', 'Search notes'],
-      ['Ctrl+1 · 2 · 3', 'Browse · Read · Tags'],
+      ['↑ · ↓', 'Next · previous note in the list'],
+      ['Ctrl+1 · 2 · 3', 'Notes · Read · Tags'],
       ['Ctrl+,', 'Settings'],
       ['Esc', 'Back, or close'],
       ['?', 'These shortcuts'],

@@ -21,7 +21,8 @@ export interface Cover {
   image?: string
 }
 
-export const DEFAULT_COVER: Cover = { enabled: true, title: 'grail', subtitle: '' }
+// Off unless you turn it on (Settings): a page to click through before your notes isn't how desktop apps start.
+export const DEFAULT_COVER: Cover = { enabled: false, title: 'grail', subtitle: '' }
 
 export type ReadingFont = 'serif' | 'sans' | 'mono'
 

@@ -106,7 +106,7 @@ export function Settings({ settings, onUpdate, onClose, onImportNow, onChangeFol
       </Section>
 
       <Section title="Cover">
-        <Row icon={<Icon.image />} title="Show a cover on launch" hint="A title page you tap to enter">
+        <Row icon={<Icon.image />} title="Show a cover on launch" hint="A title page before your notes: click or press a key to enter">
           <Toggle on={settings.cover.enabled} onChange={(v) => setCover({ enabled: v })} label="Show cover" />
         </Row>
         {settings.cover.enabled && (
