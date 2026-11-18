@@ -16,7 +16,7 @@ const GROUPS: { title: string; keys: [string, string][] }[] = [
   {
     title: 'Writing',
     keys: [
-      ['Ctrl+Enter  or  Ctrl+S', 'Done: save and close'],
+      ['Ctrl+Enter  or  Ctrl+S', 'Save and close'],
       ['Ctrl+B · Ctrl+I', 'Bold · italic'],
       ['Ctrl+K', 'Link'],
       ['Esc', 'Close (it saves as you type)'],

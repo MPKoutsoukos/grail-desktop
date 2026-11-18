@@ -45,7 +45,7 @@ function WriteArt() {
     <Mock>
       <div className="flex items-center justify-between">
         <span className="font-serif text-xl text-paper">{stamp()}</span>
-        <span className="flex items-center gap-1 rounded-lg bg-accent px-2.5 py-1 text-xs font-semibold text-[#fffaf2]"><Icon.check size={13} /> Done</span>
+        <span className="flex items-center gap-1 rounded-lg bg-accent px-2.5 py-1 text-xs font-semibold text-[#fffaf2]"><Icon.check size={13} /> Save</span>
       </div>
       <span className="flex w-fit items-center gap-1.5 rounded-full bg-ink px-2.5 py-0.5 text-[11px] text-paper-dimmer"><Icon.read size={11} className="text-accent-light" /> Gathered into Read</span>
       <p className="min-h-[84px] font-serif text-lg leading-relaxed text-paper">
@@ -141,7 +141,7 @@ function FilesArt() {
 }
 
 const TOUR = [
-  { title: 'Write it down', line: 'Press + (or Ctrl+N) and write. Every note is dated, so it needs no title and no place. It saves as you type; Done closes it.', Art: WriteArt },
+  { title: 'Write it down', line: 'Press + (or Ctrl+N) and write. Every note is dated, so it needs no title and no place. Save keeps it and closes the note (it also saves as you type).', Art: WriteArt },
   { title: 'Read it back', line: 'Read stitches your dated notes into one text, oldest first.', Art: ReadArt },
   { title: 'Shape the read', line: 'Right-click a fragment (or press and hold) to edit it, move it, take it out of the read or delete it. Deleted notes wait in #deleted: search it to find them.', Art: ShapeArt },
   { title: 'Tag to gather', line: 'Write #book in any note. Each tag becomes its own notebook with its own read.', Art: TagArt },
