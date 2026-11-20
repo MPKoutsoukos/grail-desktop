@@ -10,7 +10,6 @@ Website: **https://grailnotebook.com**
 
 **Download:** the latest version is on the [Releases page](https://github.com/MPKoutsoukos/grail-desktop/releases/latest):
 the Windows installer (`-windows-setup.exe`, or the `.msi`) and Linux packages (`.deb`, `.AppImage`).
-A listing in winget, Windows' package manager (`winget install grail`), is awaiting review.
 
 The Windows installer isn't code-signed yet, so Windows may say "Windows protected your PC" because it doesn't
 know grail yet: click **More info**, then **Run anyway**.
