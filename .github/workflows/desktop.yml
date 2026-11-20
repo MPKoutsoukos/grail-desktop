@@ -37,11 +37,11 @@ jobs:
       version: ${{ steps.meta.outputs.version }}
       build: ${{ steps.meta.outputs.build }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           submodules: true
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -98,7 +98,7 @@ jobs:
           for f in $b/appimage/*.AppImage; do [ -e "$f" ] && cp "$f" "out/$base-linux-x86_64.AppImage"; done
           ls -la out
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: desktop-${{ runner.os }}
           path: out/*
@@ -111,7 +111,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: out
           merge-multiple: true
